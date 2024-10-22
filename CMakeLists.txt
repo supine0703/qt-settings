@@ -26,7 +26,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         settings/settings.h settings/settings.cpp
-        settings/type_handling.h
+        settings/lambda_traits.h
+        settings/convert_qvariant.h
+        settings/signalregister.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET qt-settings APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

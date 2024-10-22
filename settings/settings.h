@@ -1,14 +1,108 @@
-#ifndef SETTINGS_H
-#define SETTINGS_H
+#ifndef LZL_QT_UTILS_SETTINGS_H
+#define LZL_QT_UTILS_SETTINGS_H
 
-#include <QObject>
+#include "convert_qvariant.h"
+#include "lambda_traits.h"
 
+#include <QSettings>
 
+namespace lzl::qt_utils {
+
+// A Singleton `Settings` Class
 class Settings : public QObject
 {
     Q_OBJECT
+
+    Settings(const Settings&) = delete;
+    Settings(Settings&&) = delete;
+    Settings& operator=(const Settings&) = delete;
+    Settings& operator=(Settings&&) = delete;
+
 public:
-    Settings();
+    // registerSignal template
+    template <typename Obj, typename Arg>
+    static void registerSignal(const QString& key, Obj* obj, void (Obj::*func)(Arg))
+    {
+        using arg_type = Arg;
+        Q_ASSERT_X(
+            !instance().m_map.contains(key),
+            "lzl::qt_utils::Settings::registerSignal",
+            QString("The signal: \"%1\", has already been registered.")
+                .arg(key)
+                .toStdString()
+                .c_str()
+        );
+        instance().m_map.insert(key, [obj, func](const QVariant& value) -> void {
+            (obj->*func)(ConvertQVariant<arg_type>::convert(value));
+        });
+    }
+
+#if __cplusplus >= 202002L
+    template <lzl::utils::IsLambda F>
+    static void registerSignal(const QString& key, F&& Func)
+#else
+    template <typename F>
+    static auto registerSignal(const QString& key, F&& Func) ->
+        typename std::enable_if<lzl::utils::is_lambda<decltype(&F::operator())>::value>::type
+#endif
+    {
+        using args_type = typename lzl::utils::lambda_traits<decltype(&F::operator())>::args_type;
+        Q_STATIC_ASSERT_X(
+            std::tuple_size<args_type>::value == 1, "Here lambda must take exactly one argument."
+        );
+        using arg_type = typename std::tuple_element<0, args_type>::type;
+        Q_ASSERT_X(
+            !instance().m_map.contains(key),
+            "lzl::qt_utils::Settings::registerSignal",
+            QString("The signal: \"%1\", has already been registered.")
+                .arg(key)
+                .toStdString()
+                .c_str()
+        );
+        instance().m_map.insert(key, [Func](const QVariant& value) -> void {
+            Func(ConvertQVariant<arg_type>::convert(value));
+        });
+    }
+
+    static void unRegisterSignal(const QString& key)
+    {
+        Q_ASSERT_X(
+            instance().m_map.contains(key),
+            "lzl::qt_utils::Settings::registerSignal",
+            QString("The signal: \"%1\", is not registered.").arg(key).toStdString().c_str()
+        );
+        instance().m_map.remove(key);
+    }
+
+
+    static void setValue(QAnyStringView key, const QVariant& value);
+
+    static QVariant value(QAnyStringView key);
+
+    // registerSignal function template, which accepts only Lambda expressions
+
+
+    // static void run()
+    // {
+    //     for (const auto& a : qAsConst(instance().m_map))
+    //     {
+    //         a(QVariant(999));
+    //     }
+    // }
+
+
+private:
+    static Settings& instance();
+
+private:
+    Settings() : m_settings(CONFIG_INI, QSettings::IniFormat) {}
+    QSettings m_settings;
+    QMap<QString, std::function<void(const QVariant&)>> m_map;
+
+signals:
+    void configChanged(QAnyStringView, const QVariant&);
 };
 
-#endif // SETTINGS_H
+} // namespace lzl::qt_utils
+
+#endif // LZL_QT_UTILS_SETTINGS_H
