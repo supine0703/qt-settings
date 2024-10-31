@@ -30,7 +30,7 @@ struct lambda_traits<R (C::*)(Args...) const>
     using args_type = std::tuple<Args...>;
 };
 
-#if __cplusplus >= 202002L
+#if __cpp_concepts
 // C++20 or later
 // Define the Lambda concept to check whether it is a Lambda expression
 template <typename T>

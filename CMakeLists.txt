@@ -15,10 +15,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 set(model 1)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -29,18 +29,21 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         settings/lambda_traits.h
         settings/convert_qvariant.h
         settings/signalregister.h
+        settings/function_traits.h
     )
+
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET qt-settings APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
+# set_property(TARGET qt-settings APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+# ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(qt-settings SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+
+    # Define properties for Android with Qt 5 after find_package() calls as:
+    # set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(qt-settings
             ${PROJECT_SOURCES}
@@ -59,8 +62,9 @@ target_link_libraries(qt-settings PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.qt-settings)
+    set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.qt-settings)
 endif()
+
 set_target_properties(qt-settings PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}

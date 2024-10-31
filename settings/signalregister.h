@@ -2,7 +2,7 @@
 #define LZL_QT_UTILS_SIGNALREGISTER_H
 
 #include "convert_qvariant.h"
-#include "lambda_traits.h"
+#include "function_traits.h"
 
 namespace lzl::qt_utils {
 
