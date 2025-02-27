@@ -1,13 +1,18 @@
+/**
+ * License: GPL-3.0
+ * Copyright (c) 2024 李宗霖 (Li Zonglin)
+ * Email: supine0703@outlook.com
+ * GitHub: https://github.com/supine0703
+ * Repository: qt-settings <https://github.com/supine0703/qt-settings>
+ */
+
 #ifndef ___LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
 #define ___LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
 
 #include "lzl_settings.h"
 
 namespace lzl {
-template <typename T>
-using function_traits = lzl::utils::function_traits<T>;
-template <typename T>
-using trains_class_type = lzl::utils::trains_class_type<T>;
+using Settings = utils::Settings;
 } // namespace lzl
 
 #endif // ___LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__

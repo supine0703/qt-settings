@@ -18,7 +18,6 @@ struct ConvertQVariant<QSize>
 {
     static auto convert(const QVariant& value) { return value.toSize(); }
 };
-
 template <>
 struct ConvertQVariant<QPoint>
 {
@@ -34,7 +33,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->plainTextEdit_1->viewport()->setCursor(Qt::ArrowCursor);                         // 箭头光标
     ui->plainTextEdit_2->document()->setDefaultTextOption(QTextOption(Qt::AlignCenter)); // 居中
     ui->plainTextEdit_2->viewport()->setCursor(Qt::ArrowCursor);                         // 箭头光标
-
 
     auto ec = ui->plainTextEdit_3->textCursor();
     m_label = new QLabel(QString("[%1,%2]").arg(ec.blockNumber() + 1).arg(ec.columnNumber() + 1));
@@ -202,11 +200,26 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/size", this->size());
 #endif
 }
-
+#include <QDebug>
 void MainWindow::on_pushButton_3_clicked()
 {
+    auto s = QSettings(CONFIG_INI, QSettings::IniFormat);
+    s.setValue("1234/123", "123");
+    qDebug() << s.contains("1234");
+    qDebug() << s.group();
+    qDebug() << s.allKeys();
+    qDebug() << s.childKeys();
+    qDebug() << s.childGroups();
+    s.beginGroup("app");
+    qDebug() << s.group();
+    qDebug() << s.allKeys();
+    qDebug() << s.childKeys();
+    qDebug() << s.childGroups();
+
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::reset(1);
+    // lzl::Settings::reset(1);
+    // QSettings(CONFIG_INI, QSettings::IniFormat).childGroups()
+    // QSettings(CONFIG_INI, QSettings::IniFormat).remove("app");
 #else
     QSettings(CONFIG_INI, QSettings::IniFormat).clear();
 #endif
