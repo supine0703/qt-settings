@@ -1,0 +1,19 @@
+/**
+ * License: MIT
+ * Copyright (c) 2024 李宗霖 (Li Zonglin)
+ * Email: supine0703@outlook.com
+ * GitHub: https://github.com/supine0703
+ */
+
+#ifndef __AUTO_GENERATED_@EXPORT_MACRO@EXPORTS_H__
+#define __AUTO_GENERATED_@EXPORT_MACRO@EXPORTS_H__
+
+#include <QtGlobal>
+
+#if defined(@EXPORT_MACRO@LIBRARY)
+    #define @EXPORT_MACRO@EXPORT Q_DECL_EXPORT
+#else
+    #define @EXPORT_MACRO@EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // __AUTO_GENERATED_@EXPORT_MACRO@EXPORTS_H__

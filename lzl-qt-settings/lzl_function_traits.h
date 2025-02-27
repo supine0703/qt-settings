@@ -1,12 +1,15 @@
 /**
  * License: MIT
- * Copyright (c) 2024 Li Zonglin (李宗霖) github: <https://github.com/supine0703>
- * Repositories: lzl-cpp-lib <https://github.com/supine0703/lzl-cpp-lib>
+ * Copyright (c) 2024 李宗霖 (Li Zonglin)
+ * Email: supine0703@outlook.com
+ * GitHub: https://github.com/supine0703
+ * Repository: lzl-cpp-lib <https://github.com/supine0703/lzl-cpp-lib>
  */
 
-#ifndef LZL_FUNCTIONAL_FUNCTION_TRAITS_H
-#define LZL_FUNCTIONAL_FUNCTION_TRAITS_H
+#ifndef __LZL_UTILS_FUNCTION_TRAITS_H__
+#define __LZL_UTILS_FUNCTION_TRAITS_H__
 
+#include <cstddef>
 #include <functional>
 
 namespace lzl::utils {
@@ -51,29 +54,38 @@ struct function_traits<std::function<Ret(Args...)>> : function_traits<Ret(Args..
 template <typename Ret, typename Class, typename... Args>
 struct function_traits<Ret (Class::*)(Args...)> : function_traits<Ret(Args...)>
 {
+    using class_type = Class;
 };
 
 template <typename Ret, typename Class, typename... Args>
 struct function_traits<Ret (Class::*)(Args...) const> : function_traits<Ret(Args...)>
 {
+    using class_type = Class;
 };
 
 template <typename Ret, typename Class, typename... Args>
 struct function_traits<Ret (Class::*)(Args...) volatile> : function_traits<Ret(Args...)>
 {
+    using class_type = Class;
 };
 
 template <typename Ret, typename Class, typename... Args>
 struct function_traits<Ret (Class::*)(Args...) const volatile> : function_traits<Ret(Args...)>
 {
+    using class_type = Class;
 };
 
 // lambda or functor
 template <typename Callable>
 struct function_traits : function_traits<decltype(&Callable::operator())>
 {
+    using class_type = Callable;
 };
+
+// trains class type
+template <typename Func>
+using trains_class_type = typename function_traits<Func>::class_type;
 
 } // namespace lzl::utils
 
-#endif //LZL_FUNCTIONAL_FUNCTION_TRAITS_H
+#endif //__LZL_UTILS_FUNCTION_TRAITS_H__

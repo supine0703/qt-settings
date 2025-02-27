@@ -1,0 +1,76 @@
+---
+Language: Cpp
+BasedOnStyle: Microsoft
+
+# 缩进
+AccessModifierOffset: -4
+# 行长度
+ColumnLimit: 120
+# 最大空行数
+MaxEmptyLinesToKeep: 2
+
+# 开括号后对齐
+AlignAfterOpenBracket: BlockIndent # Align, AlwaysBreak, BlockAlign, BlockIndent
+# 结构体数组对齐
+AlignArrayOfStructures: Left # Left, Right, None
+# 断行符对齐
+AlignEscapedNewlines: Left # Left, Right
+# 指针对齐 (引用)
+PointerAlignment: Left # Left, Right, Middle
+
+# true: 实参尽可能不换行 false: 实参换行则单独一行
+BinPackArguments: false
+# true: 形参尽可能不换行 false: 形参换行则单独一行
+BinPackParameters: false
+# Json 格式数组换行
+BreakArrays: true
+# 二元运算符换行 NonAssignment: 非赋值运算符换行
+BreakBeforeBinaryOperators: NonAssignment # NonAssignment, None, All
+# 构造函数初始化列表换行
+BreakConstructorInitializers: BeforeComma # BeforeColon, BeforeComma, AfterColon
+# 继承列表换行
+# BreakInheritanceList: BeforeComma # BeforeColon, BeforeComma, AfterColon
+# 三元运算符前换行
+BreakBeforeTernaryOperators: true
+# 构造函数初始化列表换行
+# Never: 单独一行 CurrentLine: 当前行或单独一行 NextLine: 当前行或下一行或单独一行
+PackConstructorInitializers: NextLine # Never, BinPack, CurrentLine, NextLine
+
+# 注释重排
+ReflowComments: false
+# 短函数单行
+AllowShortFunctionsOnASingleLine: Inline
+# 短 Lambda 单行
+AllowShortLambdasOnASingleLine: Inline
+# 模板换行
+AlwaysBreakTemplateDeclarations: Yes
+# 多行字符串前换行
+AlwaysBreakBeforeMultilineStrings: true
+
+# C++11 列表风格 false: { a, b, c } true: {a, b, c}  缩进和换行也有区别
+Cpp11BracedListStyle: true
+# 头文件分组 Preserve: 单独排序 Merge: 合并排序 Regroup: 分组排序
+IncludeBlocks: Regroup # Preserve, Merge, Regroup
+# Goto 标签缩进
+IndentGotoLabels: false
+# 预处理指令缩进
+IndentPPDirectives: BeforeHash # BeforeHash, None, AfterHash
+# 插入大括号
+InsertBraces: true
+
+# using 声明排序
+SortUsingDeclarations: true
+# cpp11 风格列表前空格
+SpaceBeforeCpp11BracedList: false
+
+# 连续赋值对齐
+# AlignConsecutiveAssignments:
+#   Enabled: true
+# 连续宏对齐
+AlignConsecutiveMacros:
+  Enabled: true
+# 大括号换行
+BraceWrapping:
+  AfterEnum: false
+  AfterNamespace: false
+  SplitEmptyFunction: false
