@@ -6,7 +6,7 @@
 ]]
 
 if(NOT DEFINED LIB_INTERFACE_HEADERS_TARGET_PATH)
-    set(LIB_INTERFACE_HEADERS_TARGET_PATH ${CMAKE_SOURCE_DIR}/include)
+    set(LIB_INTERFACE_HEADERS_TARGET_PATH ${CMAKE_SOURCE_DIR}/.include)
 endif()
 
 # Function to copy library interface headers
