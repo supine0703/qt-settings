@@ -27,6 +27,7 @@ Settings::Settings(const QString& filename, QObject* parent) : m_q_settings(file
     ::qRegisterMetaType<ConnId>("Settings::ConnId");
 }
 
+// 注册表相关类的成员函数
 /* ========================================================================== */
 
 Settings::RegData::~RegData()
@@ -74,7 +75,7 @@ Settings::RegGroup::groupset_iterator Settings::RegGroup::findGroup(const QStrin
 }
 
 void Settings::RegGroup::insertData(
-    const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check
+    const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check_func
 )
 {
     Q_ASSERT(!key.isEmpty());
@@ -90,16 +91,16 @@ void Settings::RegGroup::insertData(
     Q_ASSERT_X(
         !group->dataset.contains({name}),
         Q_FUNC_INFO,
-        QStringLiteral("Setting registration record already exists: %1").arg(key).toUtf8().constData()
+        QStringLiteral("Setting registration `record` already exists: %1").arg(key).toUtf8().constData()
     );
     Q_ASSERT_X(
-        check(default_value),
+        check_func(default_value),
         Q_FUNC_INFO,
         QStringLiteral("Setting default value check failed: %1").arg(key).toUtf8().constData()
     );
 
     // 插入数据
-    group->dataset.insert(key, {default_value, check});
+    group->dataset.insert(name, {default_value, check_func});
 }
 
 void Settings::RegGroup::removeData(const QString& key)
@@ -114,27 +115,21 @@ void Settings::RegGroup::removeData(const QString& key)
         groups.append(&(groups.last()->groupset[word]));
     }
 
+    auto group = groups.takeLast();
     Q_ASSERT_X(
-        groups.last()->dataset.contains({name}),
+        group->dataset.contains({name}),
         Q_FUNC_INFO,
-        QStringLiteral("Setting registration record not found: %1").arg(key).toUtf8().constData()
+        QStringLiteral("Setting registration `record` not found: %1").arg(key).toUtf8().constData()
     );
 
     // 删除数据
-    groups.last()->dataset.remove({name});
+    group->dataset.remove({name});
 
     // 清除空节点
-    while (!groups.isEmpty())
+    while (!groups.isEmpty() && group->dataset.isEmpty() && group->groupset.isEmpty())
     {
-        if (!groups.last()->dataset.isEmpty() || !groups.last()->groupset.isEmpty())
-        {
-            break;
-        }
-        groups.pop_back();
-        if (!groups.isEmpty())
-        {
-            groups.last()->groupset.remove(dir.takeLast());
-        }
+        group = groups.takeLast();
+        group->groupset.remove(dir.takeLast());
     }
 }
 
@@ -150,30 +145,25 @@ void Settings::RegGroup::removeGroup(const QString& dir)
         groups.append(&groups.last()->groupset[word]);
     }
 
+    auto group = groups.takeLast();
     Q_ASSERT_X(
-        groups.last()->dataset.contains({groupName}),
+        group->groupset.contains(groupName),
         Q_FUNC_INFO,
-        QStringLiteral("Group registration record not found: %1").arg(dir).toUtf8().constData()
+        QStringLiteral("Setting registration `group` not found: %1").arg(dir).toUtf8().constData()
     );
 
     // 删除组
-    groups.pop_back();
+    group->groupset.remove(groupName);
 
     // 清除空节点
-    while (!groups.isEmpty())
+    while (!groups.isEmpty() && group->dataset.isEmpty() && group->groupset.isEmpty())
     {
-        if (!groups.last()->dataset.isEmpty() || !groups.last()->groupset.isEmpty())
-        {
-            break;
-        }
-        groups.pop_back();
-        if (!groups.isEmpty())
-        {
-            groups.last()->groupset.remove(preDir.takeLast());
-        }
+        group = groups.takeLast();
+        group->groupset.remove(preDir.takeLast());
     }
 }
 
+// 注册表相关类的静态
 /* ========================================================================== */
 
 QStringList Settings::RegGroup::detachPath(const QString& path)
@@ -189,14 +179,15 @@ QPair<QStringList, QString> Settings::RegGroup::parsePath(const QString& path)
     return {dir, name};
 }
 
+// 主类的静态（对外接口）函数实现
 /* ========================================================================== */
 
-bool Settings::writeValue(const QString& key, const QVariant& value, bool emitSignal)
+bool Settings::writeValue(const QString& key, const QVariant& value, bool emit_signal)
 {
     if (instance().findRecord(key)->check(value))
     {
         instance().m_q_settings.setValue(key, value);
-        if (emitSignal)
+        if (emit_signal)
         {
             emitReadValuesFromKey(key);
         }
@@ -211,7 +202,7 @@ void Settings::disconnectReadValue(ConnId id)
     Q_ASSERT_X(
         s_conns.contains(id), Q_FUNC_INFO, QStringLiteral("Connection not found id: %1").arg(id).toUtf8().constData()
     );
-    s_conns.take(id).second();
+    s_conns.take(id).disconnect();
 }
 
 void Settings::disconnectReadValuesFromKey(const QString& key)
@@ -251,7 +242,7 @@ void Settings::disconnectAllSettingsReadValues()
 {
     for (auto it = s_conns.begin(); it != s_conns.end(); it = s_conns.erase(it))
     {
-        it.value().second();
+        it.value().disconnect();
     }
 }
 
@@ -265,35 +256,24 @@ void Settings::emitReadValuesFromKey(const QString& key)
             Q_FUNC_INFO,
             QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
         );
-        s_conns[conn].first();
+        s_conns[conn].read();
     }
 }
 
 void Settings::emitReadValuesFromGroup(const QString& dir)
 {
-    auto group_it = instance().findRegGroup(dir);
-    for (auto& data : std::as_const(group_it->dataset))
-    {
-        for (auto& conn : std::as_const(data.conns))
-        {
-            Q_ASSERT_X(
-                s_conns.contains(conn),
-                Q_FUNC_INFO,
-                QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
-            );
-            s_conns[conn].first();
-        }
-    }
+    readValueFromGroup(&(instance().findRegGroup(dir).value()));
 }
 
 void Settings::emitAllSettingsReadValues()
 {
     for (auto& conn : std::as_const(s_conns))
     {
-        conn.first();
+        conn.read();
     }
 }
 
+// 主类的辅助函数的实现
 /* ========================================================================== */
 
 Settings::RegGroup::dataset_iterator Settings::findRecord(const QString& key)
@@ -302,7 +282,7 @@ Settings::RegGroup::dataset_iterator Settings::findRecord(const QString& key)
     Q_ASSERT_X(
         it != m_regedit.dataEnd(),
         Q_FUNC_INFO,
-        QStringLiteral("Setting registration record not found: %1").arg(key).toUtf8().constData()
+        QStringLiteral("Setting registration `record` not found: %1").arg(key).toUtf8().constData()
     );
     return it;
 }
@@ -313,7 +293,7 @@ Settings::RegGroup::groupset_iterator Settings::findRegGroup(const QString& dir)
     Q_ASSERT_X(
         it != m_regedit.groupEnd(),
         Q_FUNC_INFO,
-        QStringLiteral("Group registration record not found: %1").arg(dir).toUtf8().constData()
+        QStringLiteral("Setting registration `group` not found: %1").arg(dir).toUtf8().constData()
     );
     return it;
 }
@@ -330,6 +310,7 @@ QVariant Settings::getValue(const QString& key)
     return it->default_value;
 }
 
+// 主类静态辅助函数的实现
 /* ========================================================================== */
 
 Settings::ConnId Settings::idGenerator()
@@ -340,4 +321,30 @@ Settings::ConnId Settings::idGenerator()
         ++id;
     } while (id.isNull() || s_conns.contains(id));
     return id;
+}
+
+QMap<Settings::ConnId, Settings::ConnFunctions> Settings::s_conns = {};
+
+/* ========================================================================== */
+
+void Settings::readValueFromGroup(const RegGroup* group)
+{
+    // 读取数据
+    for (auto& data : std::as_const(group->dataset))
+    {
+        for (auto& conn : std::as_const(data.conns))
+        {
+            Q_ASSERT_X(
+                s_conns.contains(conn),
+                Q_FUNC_INFO,
+                QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+            );
+            s_conns[conn].read();
+        }
+    }
+    // 递归读取子组
+    for (auto& subGroup : std::as_const(group->groupset))
+    {
+        readValueFromGroup(&subGroup);
+    }
 }

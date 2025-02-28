@@ -14,9 +14,9 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,2,2,2">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
@@ -25,30 +25,69 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_3">
+       <widget class="QPushButton" name="pushButton_reset_all">
         <property name="text">
-         <string>清除ini</string>
+         <string>重置所有设置</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_2">
+       <widget class="QPushButton" name="pushButton_reset_font">
         <property name="text">
-         <string>缩小</string>
+         <string>重置字体设置</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pushButton_reset_window">
         <property name="text">
-         <string>放大</string>
+         <string>重置窗口设置</string>
         </property>
        </widget>
       </item>
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="2,3,8">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QPushButton" name="pushButton_minus">
+        <property name="text">
+         <string>缩小</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_plus">
+        <property name="text">
+         <string>放大</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_de_all">
+        <property name="text">
+         <string>注销所有设置</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_de_font">
+        <property name="text">
+         <string>注销字体设置</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_de_window">
+        <property name="text">
+         <string>注销窗口设置</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="2,0,8">
       <item>
        <widget class="QPlainTextEdit" name="plainTextEdit_1">
         <property name="sizePolicy">
@@ -75,8 +114,8 @@
          <bool>true</bool>
         </property>
         <property name="plainText">
-         <string>菜
-单
+         <string>工
+具
 栏
 展
 开</string>

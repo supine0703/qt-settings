@@ -26,6 +26,7 @@ namespace lzl::utils {
  *   - @param key 设置的键，是完整路径，如：app/font/size
  *   - @param dir 组的路径，是完整路径，如：app/font
  *   - @param path 键或组的路径，如：app/font/size、app/font
+ *   - @param word 路径的一部分，如：app、font、size
  *   - @param name 路径的最后一部分，如：size、font
  */
 class LZL_QT_SETTINGS_EXPORT Settings final
@@ -35,7 +36,11 @@ class LZL_QT_SETTINGS_EXPORT Settings final
     Settings(Settings&&) = delete;
     Settings& operator=(Settings&&) = delete;
 
+    // 对外的接口
 public:
+    /**
+     * @brief ConnId 连接的 id 类
+     */
     class ConnId final
     {
         friend class Settings;
@@ -108,7 +113,10 @@ public:
         const QString& key,
         const QVariant& default_value = QVariant(),
         std::function<bool(const QVariant&)> check_func = [](const QVariant&) { return true; }
-    );
+    )
+    {
+        instance().m_regedit.insertData(key, default_value, check_func);
+    }
 
     /**
      * @brief registerSetting 注册设置
@@ -123,16 +131,16 @@ public:
     );
 
     /**
-     * @brief deRegisterSetting 注销设置
+     * @brief deRegisterSettingKey 注销设置
      * @param key 注册过的键
      */
-    static void deRegisterSetting(const QString& key) { instance().m_regedit.removeData(key); }
+    static void deRegisterSettingKey(const QString& key) { instance().m_regedit.removeData(key); }
 
     /**
-     * @brief deRegisterSettings 注销设置
+     * @brief deRegisterSettingGroup 注销设置
      * @param dir 存在的组
      */
-    static void deRegisterGroup(const QString& dir) { instance().m_regedit.removeGroup(dir); }
+    static void deRegisterSettingGroup(const QString& dir) { instance().m_regedit.removeGroup(dir); }
 
     /**
      * @brief deRegisterAllSettings 注销所有设置
@@ -143,47 +151,47 @@ public:
      * @brief writeValue 写入设置
      * @param key 注册过的键
      * @param value 设置的值
-     * @param emitRead 是否触发读取设置信号
+     * @param emit_signal 是否触发读取设置信号
      * @return 是否写入成功
      */
-    static bool writeValue(const QString& key, const QVariant& value, bool emitSignal = false);
+    static bool writeValue(const QString& key, const QVariant& value, bool emit_signal = false);
 
     /**
      * @brief readValue 读取设置
      * @param key 注册过的键
-     * @param func 读取设置的回调函数
+     * @param read_func 读取设置的回调函数
      */
     template <typename Func>
-    static void readValue(const QString& key, Func func);
+    static void readValue(const QString& key, Func read_func);
 
     /**
      * @brief readValue 读取设置
      * @param key 注册过的键
-     * @param obj 对象
-     * @param func 对象成员函数读取设置的回调函数
+     * @param object 对象
+     * @param read_func 对象成员函数读取设置的回调函数
      */
     template <typename Func>
-    static void readValue(const QString& key, trains_class_type<Func>* obj, Func func);
+    static void readValue(const QString& key, trains_class_type<Func>* object, Func read_func);
 
     /**
      * @brief connectReadValue 连接读取设置
      * @param key 注册过的键
-     * @param func 读取设置的回调函数
+     * @param read_func 读取设置的回调函数
      * @return 连接的 id
      */
     template <typename Func, typename = std::enable_if_t<!std::is_member_function_pointer<Func>::value>>
-    static ConnId connectReadValue(const QString& key, Func func);
+    static ConnId connectReadValue(const QString& key, Func read_func);
 
     /**
      * @brief connectReadValue 连接读取设置
      * @param key 注册过的键
-     * @param obj 对象
-     * @param func 对象成员函数读取设置的回调函数
+     * @param object 对象
+     * @param read_func 对象成员函数读取设置的回调函数
      * @param group 分组号
      * @return 连接的 id
      */
     template <typename Func, typename = std::enable_if_t<std::is_member_function_pointer<Func>::value>>
-    static ConnId connectReadValue(const QString& key, trains_class_type<Func>* obj, Func func);
+    static ConnId connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func);
 
     /**
      * @brief disconnectReadValue 断开连接读取设置
@@ -231,11 +239,13 @@ public:
      */
     static QList<ConnId> getConnIds() { return s_conns.keys(); }
 
+    // 构造析构
 private:
     static Settings& instance();
     explicit Settings(const QString& filename, QObject* parent = nullptr);
     ~Settings() = default;
 
+    // 定义注册表
 private:
     struct RegData
     {
@@ -251,6 +261,7 @@ private:
         DataSet dataset;
         GroupSet groupset;
 
+        // 基本函数
         bool isEmpty() const { return dataset.isEmpty() && groupset.isEmpty(); }
         void clear()
         {
@@ -258,6 +269,7 @@ private:
             groupset.clear();
         }
 
+        // 通过迭代器 增删改查
         using dataset_iterator = DataSet::iterator;
         using groupset_iterator = GroupSet::iterator;
 
@@ -272,7 +284,9 @@ private:
         groupset_iterator findGroup(const QString& dir);
         groupset_iterator findGroup(const QStringList& dir);
 
-        void insertData(const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check);
+        void insertData(
+            const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check_func
+        );
         void removeData(const QString& key);
         void removeGroup(const QString& dir);
 
@@ -283,53 +297,60 @@ private:
     RegGroup m_regedit;
     QSettings m_q_settings;
 
+    // 一些非静态的辅助函数
 private:
     RegGroup::dataset_iterator findRecord(const QString& key);
     RegGroup::groupset_iterator findRegGroup(const QString& dir);
     QVariant getValue(const QString& key);
 
+    // 静态的辅助函数
 private:
     static ConnId idGenerator();
 
+    // 用作递归
+    static void readValueFromGroup(const RegGroup* group);
+
+    // 静态数据
 private:
-    static QMap<ConnId, QPair<std::function<void(void)>, std::function<void(void)>>> s_conns;
+    struct ConnFunctions
+    {
+        std::function<void(void)> read;
+        std::function<void(void)> disconnect;
+    };
+    static QMap<ConnId, ConnFunctions> s_conns;
 };
 
+// 下面是模板函数的实现
 /* ========================================================================== */
-
-inline void Settings::registerSetting(
-    const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check
-)
-{
-    instance().m_regedit.insertData(key, default_value, check);
-}
 
 template <typename Class>
 inline void Settings::registerSetting(
-    const QString& key, const QVariant& default_value, Class* obj, bool (Class::*check)(const QVariant&)
+    const QString& key, const QVariant& default_value, Class* object, bool (Class::*check_func)(const QVariant&)
 )
 {
-    registerSetting(key, default_value, [obj, check](const QVariant& value) { return (obj->*check)(value); });
+    registerSetting(key, default_value, [object, check_func](const QVariant& value) {
+        return (object->*check_func)(value);
+    });
 }
 
 template <typename Func>
-inline void Settings::readValue(const QString& key, Func func)
+inline void Settings::readValue(const QString& key, Func read_func)
 {
     using arg_type = typename function_traits<Func>::template arg<0>::type;
     Q_STATIC_ASSERT(function_traits<Func>::arity == 1);
-    func(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
+    read_func(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
 }
 
 template <typename Func>
-inline void Settings::readValue(const QString& key, trains_class_type<Func>* obj, Func func)
+inline void Settings::readValue(const QString& key, trains_class_type<Func>* object, Func read_func)
 {
     using arg_type = typename function_traits<Func>::template arg<0>::type;
     Q_STATIC_ASSERT(function_traits<Func>::arity == 1);
-    (obj->*func)(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
+    (object->*read_func)(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
 }
 
 template <typename Func, typename>
-inline Settings::ConnId Settings::connectReadValue(const QString& key, Func func)
+inline Settings::ConnId Settings::connectReadValue(const QString& key, Func read_func)
 {
     auto id = idGenerator();
     auto data = &(instance().findRecord(key).value());
@@ -337,7 +358,7 @@ inline Settings::ConnId Settings::connectReadValue(const QString& key, Func func
     s_conns.insert(
         id,
         {
-            [key, func]() { instance().readValue(key, func); },
+            [key, read_func]() { instance().readValue(key, read_func); },
             [data, id]() { data->conns.removeOne(id); },
         }
     );
@@ -345,9 +366,11 @@ inline Settings::ConnId Settings::connectReadValue(const QString& key, Func func
 }
 
 template <typename Func, typename>
-inline Settings::ConnId Settings::connectReadValue(const QString& key, trains_class_type<Func>* obj, Func func)
+inline Settings::ConnId Settings::connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func)
 {
-    return connectReadValue(key, [obj, func](auto&& value) { (obj->*func)(std::forward<decltype(value)>(value)); });
+    return connectReadValue(key, [object, read_func](auto&& value) {
+        (object->*read_func)(std::forward<decltype(value)>(value));
+    });
 }
 
 } // namespace lzl::utils

@@ -4,9 +4,12 @@
 #include "ui_mainwindow.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QFile>
 #include <QPushButton>
+#include <QScreen>
 #include <QSettings>
+#include <QTimer>
 
 // 可以通过搜索这个宏查看如果不封装和封装后的区别
 #define USE_LZL_QT_SETTINGS 1
@@ -54,38 +57,42 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     });
     button2->setStyleSheet(";");
 
+    // 获取桌面可活动区域
+    auto screen_rect = QApplication::primaryScreen()->availableGeometry();
     auto font = QApplication::font();
 #if USE_LZL_QT_SETTINGS
-    // // 注册设置
-    // lzl::Settings::registerSetting(
-    //     "app/font/size",
-    //     font.pointSizeF() * 1.728,
-    //     [](const QVariant& value) {
-    //         return value.canConvert<double>() && 4 < value.toDouble() && value.toDouble() < 64;
-    //     },
-    //     1
-    // );
-    // lzl::Settings::registerSetting(
-    //     "app/size", this->size(), [](const QVariant& value) { return value.canConvert<QSize>(); }, 1
-    // );
-    // lzl::Settings::registerSetting(
-    //     "app/pos", this->pos(), [](const QVariant& value) { return value.canConvert<QPoint>(); }, 1
-    // );
-    // // 绑定设置事件
-    // lzl::Settings::connectReadValue(
-    //     "app/font/size",
-    //     [button1](double size) {
-    //         auto font = QApplication::font();
-    //         font.setPointSizeF(size);
-    //         QApplication::setFont(font);
-    //         button1->setFont(font);
-    //     },
-    //     2
-    // );
-    // lzl::Settings::connectReadValue("app/size", [this](QSize size) { this->resize(size); }, 2);
-    // lzl::Settings::connectReadValue("app/pos", [this](QPoint pos) { this->move(pos); }, 2);
-    // // 读取设置
-    // lzl::Settings::emitReadValues(2);
+    // 注册设置
+    lzl::Settings::registerSetting("app/font/size", font.pointSizeF() * 1.728, [](const QVariant& value) {
+        return value.canConvert<double>() && 4 < value.toDouble() && value.toDouble() < 48;
+    });
+    lzl::Settings::registerSetting("app/window/size", this->size(), [screen_rect](const QVariant& value) {
+        if (value.canConvert<QSize>())
+        {
+            auto size = value.toSize();
+            return size.width() > 400 && size.height() > 300 && size.width() < screen_rect.width()
+                   && size.height() < screen_rect.height();
+        }
+        return false;
+    });
+    lzl::Settings::registerSetting("app/window/pos", this->pos(), [screen_rect](const QVariant& value) {
+        if (value.canConvert<QPoint>())
+        {
+            auto pos = value.toPoint();
+            return screen_rect.contains(pos);
+        }
+        return false;
+    });
+    // 绑定设置事件
+    lzl::Settings::connectReadValue("app/font/size", [button1](double size) {
+        auto font = QApplication::font();
+        font.setPointSizeF(size);
+        QApplication::setFont(font);
+        button1->setFont(font);
+    });
+    lzl::Settings::connectReadValue("app/window/size", [this](QSize size) { this->resize(size); });
+    lzl::Settings::connectReadValue("app/window/pos", [this](QPoint pos) { this->move(pos); });
+    // 读取设置
+    lzl::Settings::emitReadValuesFromGroup("app");
 #else
     // ***
     connect(this, &MainWindow::fontSizeChange, this, [button1](double sizeF) {
@@ -94,24 +101,27 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         button1->setFont(font);
     });
     QSettings settings(CONFIG_INI, QSettings::IniFormat);
-    if (settings.contains("app/font/size"))
-    {
-        font.setPointSizeF(settings.value("app/font/size").toDouble());
-    }
-    else
+    font.setPointSizeF(settings.value("app/font/size", font.pointSizeF() * 1.728).toDouble());
+    // 限制值
+    if (font.pointSizeF() < 4 || font.pointSizeF() > 48)
     {
         font.setPointSizeF(font.pointSizeF() * 1.728); // 1.2 * 1.2 * 1.2
     }
     QApplication::setFont(font);
 
-    if (settings.contains("app/pos"))
+    this->move(settings.value("app/window/pos", QPoint(0, 0)).toPoint());
+    // 限制窗体坐标
+    if (!screen_rect.contains(this->pos()))
     {
-        this->move(settings.value("app/pos").toPoint());
-        QRect();
+        this->move({0, 0});
     }
-    if (settings.contains("app/size"))
+    this->resize(settings.value("app/window/size", QSize(800, 600)).toSize());
+    // 限制窗体大小
+    auto size = this->size();
+    if (size.width() < 400 || size.height() < 300 || size.width() > screen_rect.width()
+        || size.height() > screen_rect.height())
     {
-        this->resize(settings.value("app/size").toSize());
+        this->resize(800, 600);
     }
     button1->setFont(font);
 #endif
@@ -122,47 +132,10 @@ MainWindow::~MainWindow()
     delete ui;
 #if USE_LZL_QT_SETTINGS
     // 注销设置
-    // lzl::Settings::deRegisterSettings(1);
-#endif
-}
-
-void MainWindow::on_plainTextEdit_3_cursorPositionChanged()
-{
-    auto ec = ui->plainTextEdit_3->textCursor();
-    m_label->setText(QString("[%1,%2]").arg(ec.blockNumber() + 1).arg(ec.columnNumber() + 1));
-}
-
-void MainWindow::on_pushButton_2_clicked()
-{
-    auto font = QApplication::font();
-    font.setPointSizeF(font.pointSizeF() / 1.2);
-#if USE_LZL_QT_SETTINGS
-    // lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
-#else
-    if (font.pointSizeF() < 4)
+    if (lzl::Settings::containsGroup("app"))
     {
-        font.setPointSizeF(4);
+        lzl::Settings::deRegisterSettingGroup("app");
     }
-    emit fontSizeChange(font.pointSizeF());
-    QApplication::setFont(font);
-    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/font/size", font.pointSizeF());
-#endif
-}
-
-void MainWindow::on_pushButton_clicked()
-{
-    auto font = QApplication::font();
-    font.setPointSizeF(font.pointSizeF() * 1.2);
-#if USE_LZL_QT_SETTINGS
-    // lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
-#else
-    if (font.pointSizeF() > 64)
-    {
-        font.setPointSizeF(64);
-    }
-    emit fontSizeChange(font.pointSizeF());
-    QApplication::setFont(font);
-    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/font/size", font.pointSizeF());
 #endif
 }
 
@@ -172,11 +145,11 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
     {
         if (event->key() == Qt::Key_Equal)
         {
-            on_pushButton_clicked();
+            on_pushButton_plus_clicked();
         }
         else if (event->key() == Qt::Key_Minus)
         {
-            on_pushButton_2_clicked();
+            on_pushButton_minus_clicked();
         }
     }
 }
@@ -185,9 +158,13 @@ void MainWindow::moveEvent(QMoveEvent* event)
 {
     QWidget::moveEvent(event);
 #if USE_LZL_QT_SETTINGS
-    // lzl::Settings::writeValue("app/pos", this->pos());
+    // 如果没有注销的话直接写入（正常来说也不应该在结束前注销）
+    if (lzl::Settings::containsKey("app/window/pos"))
+    {
+        lzl::Settings::writeValue("app/window/pos", this->pos());
+    }
 #else
-    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/pos", this->pos());
+    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/window/pos", this->pos());
 #endif
 }
 
@@ -195,16 +172,173 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 #if USE_LZL_QT_SETTINGS
-    // lzl::Settings::writeValue("app/size", this->size());
+    // 如果没有注销的话直接写入（正常来说也不应该在结束前注销）
+    if (lzl::Settings::containsKey("app/window/size"))
+    {
+        lzl::Settings::writeValue("app/window/size", this->size());
+    }
 #else
-    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/size", this->size());
+    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/window/size", this->size());
 #endif
 }
-#include <QDebug>
-void MainWindow::on_pushButton_3_clicked()
+
+void MainWindow::on_pushButton_minus_clicked()
+{
+    auto font = QApplication::font();
+    font.setPointSizeF(font.pointSizeF() / 1.2);
+#if USE_LZL_QT_SETTINGS
+    // 没有注销的话直接写入
+    if (lzl::Settings::containsKey("app/font/size"))
+    {
+        lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
+    }
+    // 否则只能通过常规方式（正常来说也不应该在结束前注销）
+    else
+#endif
+    {
+        if (font.pointSizeF() < 4)
+        {
+            font.setPointSizeF(4);
+        }
+        emit fontSizeChange(font.pointSizeF());
+        QApplication::setFont(font);
+#if !USE_LZL_QT_SETTINGS
+        QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/font/size", font.pointSizeF());
+#endif
+    }
+}
+
+void MainWindow::on_pushButton_plus_clicked()
+{
+    auto font = QApplication::font();
+    font.setPointSizeF(font.pointSizeF() * 1.2);
+#if USE_LZL_QT_SETTINGS
+    // 没有注销的话直接写入
+    if (lzl::Settings::containsKey("app/font/size"))
+    {
+        lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
+    }
+    // 否则只能通过常规方式（正常来说也不应该在结束前注销）
+    else
+#endif
+    {
+        if (font.pointSizeF() > 48)
+        {
+            font.setPointSizeF(48);
+        }
+        emit fontSizeChange(font.pointSizeF());
+        QApplication::setFont(font);
+#if !USE_LZL_QT_SETTINGS
+        QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/font/size", font.pointSizeF());
+#endif
+    }
+}
+
+void MainWindow::on_plainTextEdit_3_cursorPositionChanged()
+{
+    auto ec = ui->plainTextEdit_3->textCursor();
+    m_label->setText(QString("[%1,%2]").arg(ec.blockNumber() + 1).arg(ec.columnNumber() + 1));
+}
+
+void MainWindow::on_pushButton_reset_all_clicked()
 {
 #if USE_LZL_QT_SETTINGS
+    lzl::Settings::reset("app");
+    lzl::Settings::emitReadValuesFromKey("app/font/size");
+    QCoreApplication::processEvents();
+    QTimer::singleShot(0, this, []() { lzl::Settings::emitReadValuesFromGroup("app/window"); });
 #else
     QSettings(CONFIG_INI, QSettings::IniFormat).clear();
+    // 重置所有设置
+    auto font = QApplication::font();
+    font.setPointSizeF(12 * 1.728);
+    QApplication::setFont(font);
+    emit fontSizeChange(font.pointSizeF());
+    QCoreApplication::processEvents();
+    QTimer::singleShot(0, this, [this]() {
+        this->resize(800, 600);
+        this->move(0, 0);
+    });
+#endif
+}
+
+void MainWindow::on_pushButton_reset_font_clicked()
+{
+#if USE_LZL_QT_SETTINGS
+    lzl::Settings::reset("app/font/size");
+    lzl::Settings::emitReadValuesFromKey("app/font/size");
+#else
+    QSettings(CONFIG_INI, QSettings::IniFormat).remove("app/font/size");
+    auto font = QApplication::font();
+    font.setPointSizeF(12 * 1.728);
+    QApplication::setFont(font);
+    emit fontSizeChange(font.pointSizeF());
+    QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/font/size", font.pointSizeF());
+#endif
+}
+
+void MainWindow::on_pushButton_reset_window_clicked()
+{
+#if USE_LZL_QT_SETTINGS
+    lzl::Settings::reset("app/window");
+    lzl::Settings::emitReadValuesFromGroup("app/window");
+#else
+    QSettings(CONFIG_INI, QSettings::IniFormat).remove("app/window/size");
+    QSettings(CONFIG_INI, QSettings::IniFormat).remove("app/window/pos");
+    QTimer::singleShot(0, this, [this]() {
+        this->resize(800, 600);
+        this->move(0, 0);
+    });
+#endif
+}
+
+void MainWindow::on_pushButton_de_all_clicked()
+{
+#if USE_LZL_QT_SETTINGS
+    if (lzl::Settings::containsGroup("app"))
+    {
+        lzl::Settings::deRegisterSettingGroup("app");
+        ui->plainTextEdit_3->appendPlainText("app 注销成功！所有设置将不会被记录！");
+    }
+    else
+    {
+        ui->plainTextEdit_3->appendPlainText("app 已经注销过！");
+    }
+#else
+    ui->plainTextEdit_3->appendPlainText("常规方法不支持注销设置！");
+#endif
+}
+
+void MainWindow::on_pushButton_de_font_clicked()
+{
+#if USE_LZL_QT_SETTINGS
+    if (lzl::Settings::containsKey("app/font/size"))
+    {
+        lzl::Settings::deRegisterSettingKey("app/font/size");
+        ui->plainTextEdit_3->appendPlainText("app/font/size 注销成功！改变字体将不会被记录！");
+    }
+    else
+    {
+        ui->plainTextEdit_3->appendPlainText("app/font/size 已经注销过！");
+    }
+#else
+    ui->plainTextEdit_3->appendPlainText("常规方法不支持注销设置！");
+#endif
+}
+
+void MainWindow::on_pushButton_de_window_clicked()
+{
+#if USE_LZL_QT_SETTINGS
+    if (lzl::Settings::containsGroup("app/window"))
+    {
+        lzl::Settings::deRegisterSettingGroup("app/window");
+        ui->plainTextEdit_3->appendPlainText("app/window 注销成功！改变窗体大小和位置将不会被记录！");
+    }
+    else
+    {
+        ui->plainTextEdit_3->appendPlainText("app/window 已经注销过！");
+    }
+#else
+    ui->plainTextEdit_3->appendPlainText("常规方法不支持注销设置！");
 #endif
 }

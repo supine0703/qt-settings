@@ -1,8 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
 #include <QLabel>
+#include <QMainWindow>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -21,11 +21,21 @@ public:
 private slots:
     void on_plainTextEdit_3_cursorPositionChanged();
 
-    void on_pushButton_2_clicked();
+    void on_pushButton_reset_all_clicked();
 
-    void on_pushButton_clicked();
+    void on_pushButton_reset_font_clicked();
 
-    void on_pushButton_3_clicked();
+    void on_pushButton_reset_window_clicked();
+
+    void on_pushButton_de_all_clicked();
+
+    void on_pushButton_de_font_clicked();
+
+    void on_pushButton_de_window_clicked();
+
+    void on_pushButton_minus_clicked();
+
+    void on_pushButton_plus_clicked();
 
 private:
     Ui::MainWindow* ui;
