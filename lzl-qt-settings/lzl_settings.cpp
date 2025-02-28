@@ -8,6 +8,7 @@
 
 #include "lzl_settings.h"
 
+#include <QDebug>
 #include <QRegularExpression>
 
 #ifndef CONFIG_INI
@@ -38,18 +39,39 @@ Settings::RegData::~RegData()
     }
 }
 
+void Settings::RegData::clearConns() const
+{
+    // 从全局表中删除
+    for (auto& conn : std::as_const(conns))
+    {
+        Q_ASSERT_X(
+            s_conns.contains(conn),
+            Q_FUNC_INFO,
+            QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+        );
+        s_conns.remove(conn);
+    }
+    // 从自己中删除
+    this->conns.clear();
+}
+
 Settings::RegGroup::dataset_iterator Settings::RegGroup::findData(const QString& key)
 {
     auto [dir, name] = parsePath(key);
 
-    if (auto group_it = findGroup(dir); group_it != groupEnd())
+    // 组为空（全局组），如果 name 也为空会返回 dataEnd();
+    if (dir.isEmpty())
+    {
+        return dataset.find({name});
+    }
+    // 否则从组中查找
+    else if (auto group_it = findGroup(dir); group_it != groupEnd())
     {
         if (auto data_it = group_it->dataset.find({name}); data_it != group_it->dataset.end())
         {
             return data_it;
         }
     }
-
     return dataEnd();
 }
 
@@ -60,7 +82,8 @@ Settings::RegGroup::groupset_iterator Settings::RegGroup::findGroup(const QStrin
 
 Settings::RegGroup::groupset_iterator Settings::RegGroup::findGroup(const QStringList& dir)
 {
-    Settings::RegGroup::groupset_iterator group_it;
+    auto group_it = groupEnd();
+    // 从根节点开始查找
     auto group = this;
     for (auto& word : dir)
     {
@@ -168,14 +191,16 @@ void Settings::RegGroup::removeGroup(const QString& dir)
 
 QStringList Settings::RegGroup::detachPath(const QString& path)
 {
+    // 如果 path 为空，返回空列表
     static const QRegularExpression re(QStringLiteral(R"([/\\])"));
     return path.split(re, Qt::SkipEmptyParts);
 }
 
 QPair<QStringList, QString> Settings::RegGroup::parsePath(const QString& path)
 {
+    // 如果 path 为空，返回空列表和空字符串
     auto dir = detachPath(path);
-    auto name = dir.takeLast();
+    auto name = dir.isEmpty() ? QString() : dir.takeLast();
     return {dir, name};
 }
 
@@ -184,6 +209,9 @@ QPair<QStringList, QString> Settings::RegGroup::parsePath(const QString& path)
 
 bool Settings::writeValue(const QString& key, const QVariant& value, bool emit_signal)
 {
+    Q_ASSERT(!key.isEmpty());
+
+    // 如果数据符合检查
     if (instance().findRecord(key)->check(value))
     {
         instance().m_q_settings.setValue(key, value);
@@ -207,34 +235,18 @@ void Settings::disconnectReadValue(ConnId id)
 
 void Settings::disconnectReadValuesFromKey(const QString& key)
 {
-    auto data_it = instance().findRecord(key);
-    for (auto& conn : std::as_const(data_it->conns))
-    {
-        Q_ASSERT_X(
-            s_conns.contains(conn),
-            Q_FUNC_INFO,
-            QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
-        );
-        s_conns.remove(conn);
-    }
-    data_it->conns.clear();
+    Q_ASSERT(!key.isEmpty());
+    instance().findRecord(key)->clearConns();
 }
 
 void Settings::disconnectReadValuesFromGroup(const QString& dir)
 {
+    Q_ASSERT(!dir.isEmpty());
+
     auto group_it = instance().findRegGroup(dir);
     for (auto& data : std::as_const(group_it->dataset))
     {
-        for (auto& conn : std::as_const(data.conns))
-        {
-            Q_ASSERT_X(
-                s_conns.contains(conn),
-                Q_FUNC_INFO,
-                QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
-            );
-            s_conns.remove(conn);
-        }
-        data.conns.clear();
+        data.clearConns();
     }
 }
 
@@ -264,11 +276,13 @@ void Settings::emitReadValues(const QList<ConnId>& ids)
 
 void Settings::emitReadValuesFromKey(const QString& key)
 {
+    Q_ASSERT(!key.isEmpty());
     emitReadValues(instance().findRecord(key)->conns);
 }
 
 void Settings::emitReadValuesFromGroup(const QString& dir)
 {
+    Q_ASSERT(!dir.isEmpty());
     QList<ConnId> conns;
     readValueFromGroup(&(instance().findRegGroup(dir).value()), conns);
     std::sort(conns.begin(), conns.end());

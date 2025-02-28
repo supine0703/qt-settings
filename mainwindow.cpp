@@ -103,6 +103,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     id3 = lzl::Settings::connectReadValue("app/window/pos", this, &MainWindow::move);
     // 读取设置
     lzl::Settings::emitReadValuesFromGroup("app");
+
+    // 进行全局设置的验证
+    int i;
+    lzl::Settings::registerSetting("global");
+    lzl::Settings::readValue("global", [&i](int value) { qDebug() << "global:" << (i = value); });
+    lzl::Settings::writeValue("global", ++i);
+    lzl::Settings::connectReadValue("global", [](int value) { qDebug() << "global:" << value; });
+    lzl::Settings::emitReadValuesFromKey("global");
+    lzl::Settings::disconnectReadValuesFromKey("global");
+    lzl::Settings::deRegisterSettingKey("global");
 #else
     // ***
     connect(this, &MainWindow::fontSizeChange, this, [button1](double sizeF) {
