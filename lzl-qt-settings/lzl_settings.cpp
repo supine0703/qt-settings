@@ -22,47 +22,67 @@ Settings& Settings::instance()
     return settings;
 }
 
-Settings::Settings(const QString& filename) : m_q_settings(filename, QSettings::IniFormat)
+Settings::Settings(const QString& filename, QObject* parent) : m_q_settings(filename, QSettings::IniFormat, parent)
 {
     ::qRegisterMetaType<ConnId>("Settings::ConnId");
 }
 
 /* ========================================================================== */
 
-Settings::RegGroup::dataset_iterator Settings::RegGroup::findData(const QString& key)
+Settings::RegData::~RegData()
 {
-    auto [path, name] = parsePath(key);
-    auto group_it = findGroup(path);
-    if (group_it == groupEnd())
+    for (auto& conn : std::as_const(conns))
     {
-        return dataEnd();
+        s_conns.remove(conn);
     }
-    auto data_it = group_it->dataset.find({name});
-    return data_it == group_it->dataset.end() ? dataEnd() : &(*data_it);
 }
 
-Settings::RegGroup::groupset_iterator Settings::RegGroup::findGroup(const QStringList& path)
+Settings::RegGroup::dataset_iterator Settings::RegGroup::findData(const QString& key)
 {
-    auto group = this;
-    for (auto& word : path)
+    auto [dir, name] = parsePath(key);
+
+    if (auto group_it = findGroup(dir); group_it != groupEnd())
     {
-        auto it = group->groupset.find(word);
-        if (it == group->groupset.end())
+        if (auto data_it = group_it->dataset.find({name}); data_it != group_it->dataset.end())
+        {
+            return data_it;
+        }
+    }
+
+    return dataEnd();
+}
+
+Settings::RegGroup::groupset_iterator Settings::RegGroup::findGroup(const QString& dir)
+{
+    return findGroup(detachPath(dir));
+}
+
+Settings::RegGroup::groupset_iterator Settings::RegGroup::findGroup(const QStringList& dir)
+{
+    Settings::RegGroup::groupset_iterator group_it;
+    auto group = this;
+    for (auto& word : dir)
+    {
+        group_it = group->groupset.find(word);
+        if (group_it == group->groupset.end())
         {
             return groupEnd();
         }
-        group = &it.value();
+        group = &(group_it.value());
     }
-    return group;
+    return group_it;
 }
 
 void Settings::RegGroup::insertData(
     const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check
 )
 {
-    auto [path, name] = RegGroup::parsePath(key);
+    Q_ASSERT(!key.isEmpty());
+
+    // 查找组
+    auto [dir, name] = parsePath(key);
     auto group = this;
-    for (auto& word : path)
+    for (auto& word : std::as_const(dir))
     {
         group = &(group->groupset[word]);
     }
@@ -78,22 +98,20 @@ void Settings::RegGroup::insertData(
         QStringLiteral("Setting default value check failed: %1").arg(key).toUtf8().constData()
     );
 
-    group->dataset.insert({key, default_value, check});
+    // 插入数据
+    group->dataset.insert(key, {default_value, check});
 }
 
 void Settings::RegGroup::removeData(const QString& key)
 {
-    if (key.isEmpty())
-    {
-        return;
-    }
+    Q_ASSERT(!key.isEmpty());
 
     // 查找组
-    auto [path, name] = parsePath(key);
+    auto [dir, name] = parsePath(key);
     auto groups = QList({this});
-    for (auto& word : path)
+    for (auto& word : std::as_const(dir))
     {
-        groups.append(&groups.last()->groupset[word]);
+        groups.append(&(groups.last()->groupset[word]));
     }
 
     Q_ASSERT_X(
@@ -104,6 +122,8 @@ void Settings::RegGroup::removeData(const QString& key)
 
     // 删除数据
     groups.last()->dataset.remove({name});
+
+    // 清除空节点
     while (!groups.isEmpty())
     {
         if (!groups.last()->dataset.isEmpty() || !groups.last()->groupset.isEmpty())
@@ -113,22 +133,19 @@ void Settings::RegGroup::removeData(const QString& key)
         groups.pop_back();
         if (!groups.isEmpty())
         {
-            groups.last()->groupset.remove(path.takeLast());
+            groups.last()->groupset.remove(dir.takeLast());
         }
     }
 }
 
-void Settings::RegGroup::removeGroup(const QString& path)
+void Settings::RegGroup::removeGroup(const QString& dir)
 {
-    if (path.isEmpty())
-    {
-        return;
-    }
+    Q_ASSERT(!dir.isEmpty());
 
     // 查找组
-    auto [prePath, groupName] = parsePath(path);
+    auto [preDir, groupName] = parsePath(dir);
     auto groups = QList({this});
-    for (auto& word : prePath)
+    for (auto& word : std::as_const(preDir))
     {
         groups.append(&groups.last()->groupset[word]);
     }
@@ -136,11 +153,13 @@ void Settings::RegGroup::removeGroup(const QString& path)
     Q_ASSERT_X(
         groups.last()->dataset.contains({groupName}),
         Q_FUNC_INFO,
-        QStringLiteral("Group registration record not found: %1").arg(path).toUtf8().constData()
+        QStringLiteral("Group registration record not found: %1").arg(dir).toUtf8().constData()
     );
 
     // 删除组
     groups.pop_back();
+
+    // 清除空节点
     while (!groups.isEmpty())
     {
         if (!groups.last()->dataset.isEmpty() || !groups.last()->groupset.isEmpty())
@@ -150,117 +169,166 @@ void Settings::RegGroup::removeGroup(const QString& path)
         groups.pop_back();
         if (!groups.isEmpty())
         {
-            groups.last()->groupset.remove(prePath.takeLast());
+            groups.last()->groupset.remove(preDir.takeLast());
         }
     }
 }
 
-QPair<QStringList, QString> Settings::RegGroup::parsePath(const QString& key)
+/* ========================================================================== */
+
+QStringList Settings::RegGroup::detachPath(const QString& path)
 {
     static const QRegularExpression re(QStringLiteral(R"([/\\])"));
-    auto path = key.split(re, Qt::SkipEmptyParts);
-    auto name = path.takeLast();
-    return {path, name};
+    return path.split(re, Qt::SkipEmptyParts);
+}
+
+QPair<QStringList, QString> Settings::RegGroup::parsePath(const QString& path)
+{
+    auto dir = detachPath(path);
+    auto name = dir.takeLast();
+    return {dir, name};
 }
 
 /* ========================================================================== */
 
-void Settings::deRegisterAllSettings()
-{
-    // instance().m_regedit.clear();
-    // instance().m_regs_groups.clear();
-    // instance().m_conns.clear();
-    // instance().m_conns_groups.clear();
-}
-
 bool Settings::writeValue(const QString& key, const QVariant& value, bool emitSignal)
 {
-    // if (instance().findKey(key)->check(value))
-    // {
-    //     instance().m_q_settings.setValue(key, value);
-    //     if (emitSignal)
-    //     {
-    //         emitReadValue(key);
-    //     }
-    //     return true;
-    // }
-    // return false;
+    if (instance().findRecord(key)->check(value))
+    {
+        instance().m_q_settings.setValue(key, value);
+        if (emitSignal)
+        {
+            emitReadValuesFromKey(key);
+        }
+        return true;
+    }
+    return false;
 }
 
 void Settings::disconnectReadValue(ConnId id)
 {
-    // Q_ASSERT(!id.isNull());
-    // Q_ASSERT_X(
-    //     instance().m_conns.contains(id),
-    //     Q_FUNC_INFO,
-    //     QStringLiteral("Connection not found id: %1").arg(id).toUtf8().constData()
-    // );
-    // auto key = instance().m_conns.take(id).second; // remove from m_conns
-    // auto it = instance().findKey(key);
-    // Q_ASSERT_X(
-    //     it->conns.contains(id),
-    //     Q_FUNC_INFO,
-    //     QStringLiteral("Connection not found key: %1").arg(key).toUtf8().constData()
-    // );
-    // auto group = it->conns.take(id); // remove from regedit
-    // Q_ASSERT_X(
-    //     instance().m_conns_groups.contains(group),
-    //     Q_FUNC_INFO,
-    //     QStringLiteral("Group not found id: %1").arg(group).toUtf8().constData()
-    // );
-    // instance().m_conns_groups[group].remove(id); // remove from m_conns_groups
-    // if (instance().m_conns_groups[group].isEmpty())
-    // {
-    //     instance().m_conns_groups.remove(group);
-    // }
+    Q_ASSERT(!id.isNull());
+    Q_ASSERT_X(
+        s_conns.contains(id), Q_FUNC_INFO, QStringLiteral("Connection not found id: %1").arg(id).toUtf8().constData()
+    );
+    s_conns.take(id).second();
 }
 
-void Settings::disconnectAllReadValues()
+void Settings::disconnectReadValuesFromKey(const QString& key)
 {
-    // instance().m_conns.clear();
-    // instance().m_conns_groups.clear();
-    // for (auto& setting : std::as_const(instance().m_regedit))
-    // {
-    //     setting.conns.clear();
-    // }
+    auto data_it = instance().findRecord(key);
+    for (auto& conn : std::as_const(data_it->conns))
+    {
+        Q_ASSERT_X(
+            s_conns.contains(conn),
+            Q_FUNC_INFO,
+            QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+        );
+        s_conns.remove(conn);
+    }
+    data_it->conns.clear();
 }
 
-void Settings::emitReadValue(const QString& key)
+void Settings::disconnectReadValuesFromGroup(const QString& dir)
 {
-    // const auto conns = instance().findKey(key)->conns.keys();
-    // for (auto& conn : conns)
-    // {
-    //     instance().m_conns[conn].first();
-    // }
+    auto group_it = instance().findRegGroup(dir);
+    for (auto& data : std::as_const(group_it->dataset))
+    {
+        for (auto& conn : std::as_const(data.conns))
+        {
+            Q_ASSERT_X(
+                s_conns.contains(conn),
+                Q_FUNC_INFO,
+                QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+            );
+            s_conns.remove(conn);
+        }
+        data.conns.clear();
+    }
 }
 
-void Settings::emitReadValues(const QStringList& keys)
+void Settings::disconnectAllSettingsReadValues()
 {
-    // for (auto& key : keys)
-    // {
-    //     emitReadValue(key);
-    // }
+    for (auto it = s_conns.begin(); it != s_conns.end(); it = s_conns.erase(it))
+    {
+        it.value().second();
+    }
 }
 
-void Settings::emitReadAllValues()
+void Settings::emitReadValuesFromKey(const QString& key)
 {
-    // for (auto& [func, _] : std::as_const(instance().m_conns))
-    // {
-    //     func();
-    // }
+    auto data_it = instance().findRecord(key);
+    for (auto& conn : std::as_const(data_it->conns))
+    {
+        Q_ASSERT_X(
+            s_conns.contains(conn),
+            Q_FUNC_INFO,
+            QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+        );
+        s_conns[conn].first();
+    }
 }
 
-QList<Settings::ConnId> Settings::readValueIds(const QString& key)
+void Settings::emitReadValuesFromGroup(const QString& dir)
 {
-    // if (key.isEmpty())
-    // {
-    //     return instance().m_conns.keys();
-    // }
-    // auto it = instance().findKey(key);
-    // return it->conns.keys();
+    auto group_it = instance().findRegGroup(dir);
+    for (auto& data : std::as_const(group_it->dataset))
+    {
+        for (auto& conn : std::as_const(data.conns))
+        {
+            Q_ASSERT_X(
+                s_conns.contains(conn),
+                Q_FUNC_INFO,
+                QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+            );
+            s_conns[conn].first();
+        }
+    }
+}
+
+void Settings::emitAllSettingsReadValues()
+{
+    for (auto& conn : std::as_const(s_conns))
+    {
+        conn.first();
+    }
 }
 
 /* ========================================================================== */
+
+Settings::RegGroup::dataset_iterator Settings::findRecord(const QString& key)
+{
+    auto it = m_regedit.findData(key);
+    Q_ASSERT_X(
+        it != m_regedit.dataEnd(),
+        Q_FUNC_INFO,
+        QStringLiteral("Setting registration record not found: %1").arg(key).toUtf8().constData()
+    );
+    return it;
+}
+
+Settings::RegGroup::groupset_iterator Settings::findRegGroup(const QString& dir)
+{
+    auto it = m_regedit.findGroup(dir);
+    Q_ASSERT_X(
+        it != m_regedit.groupEnd(),
+        Q_FUNC_INFO,
+        QStringLiteral("Group registration record not found: %1").arg(dir).toUtf8().constData()
+    );
+    return it;
+}
+
+QVariant Settings::getValue(const QString& key)
+{
+    auto it = findRecord(key);
+    if (auto value = m_q_settings.value(key, it->default_value); it->check(value))
+    {
+        return value;
+    }
+    // 重置非法值
+    m_q_settings.setValue(key, it->default_value);
+    return it->default_value;
+}
 
 /* ========================================================================== */
 

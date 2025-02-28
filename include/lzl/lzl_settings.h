@@ -17,8 +17,17 @@
 #include <QSet>
 #include <QSettings>
 
-namespace lzl {
+namespace lzl::utils {
 
+/** 
+ * @version 0.3.x
+ * @note 0.3 之后启用 GroupId 而是直接使用路径作为分组（分节）
+ * @note 注意变量名的含义：
+ *   - @param key 设置的键，是完整路径，如：app/font/size
+ *   - @param dir 组的路径，是完整路径，如：app/font
+ *   - @param path 键或组的路径，如：app/font/size、app/font
+ *   - @param name 路径的最后一部分，如：size、font
+ */
 class LZL_QT_SETTINGS_EXPORT Settings final
 {
     Settings(const Settings&) = delete;
@@ -59,29 +68,10 @@ public:
         }
     };
 
-    class GroupId final
-    {
-        friend class Settings;
-
-    public:
-        GroupId(size_t id = 0) : m_id(id) {}
-        GroupId(const GroupId&) = default;
-        GroupId& operator=(const GroupId&) = default;
-        ~GroupId() = default;
-
-        operator size_t() const { return m_id; }
-        friend bool operator==(const GroupId& lhs, const GroupId& rhs) { return lhs.m_id == rhs.m_id; }
-        friend bool operator<(const GroupId& lhs, const GroupId& rhs) { return lhs.m_id < rhs.m_id; }
-
-    private:
-        size_t m_id;
-
-        GroupId& operator=(size_t id)
-        {
-            m_id = id;
-            return *this;
-        }
-    };
+    /**
+     * @brief sync 同步设置
+     */
+    static void sync() { instance().m_q_settings.sync(); }
 
     /**
      * @brief reset 清空设置文件
@@ -90,91 +80,68 @@ public:
 
     /**
      * @brief reset 清空设置
-     * @param key 设置的键
+     * @param path 键或组的路径
      */
-    static void reset(const QString& key);
+    static void reset(const QString& path) { instance().m_q_settings.remove(path); }
 
     /**
-      * @brief reset 清空设置
-      * @param keys 设置的键列表
-      */
-    static void reset(const QStringList& keys);
+     * @brief containsKey 是否注册过设置
+     * @param key 键的值
+     * @return 是否注册过
+     */
+    static bool containsKey(const QString& key) { return instance().m_regedit.containsData(key); }
 
     /**
-     * @brief reset 清空设置
-     * @param group 分组号
+     * @brief containsGroup 是否存在组
+     * @param dir 组的路径
+     * @return 是否存在组
      */
-    static void reset(GroupId group);
-
-    /**
-     * @brief sync 同步设置
-     */
-    static void sync() { instance().m_q_settings.sync(); }
-
-    /**
-     * @brief containsSetting 是否包含设置
-     * @param key 设置的键
-     * @return 是否包含
-     */
-    static bool containsSetting(const QString& key) { return instance().m_regedit.contains({key}); }
+    static bool containsGroup(const QString& dir) { return instance().m_regedit.containsGroup(dir); }
 
     /**
      * @brief registerSetting 注册设置
-     * @param key 设置的键
+     * @param key 要注册的键
      * @param default_value 默认值
-     * @param check 检查默认值是否合法
-     * @param group 分组号
+     * @param check_func 检查默认值是否合法
      */
     static void registerSetting(
         const QString& key,
         const QVariant& default_value = QVariant(),
-        std::function<bool(const QVariant&)> check = [](const QVariant&) { return true; },
-        GroupId group = 0
+        std::function<bool(const QVariant&)> check_func = [](const QVariant&) { return true; }
     );
 
     /**
      * @brief registerSetting 注册设置
-     * @param key 设置的键
+     * @param key 要注册的键
      * @param default_value 默认值
-     * @param obj 对象
-     * @param check 对象成员函数检查默认值是否合法
-     * @param group 分组号
+     * @param object 对象
+     * @param check_func 对象成员函数检查默认值是否合法
      */
     template <typename Class>
     static void registerSetting(
-        const QString& key,
-        const QVariant& default_value,
-        Class* obj,
-        bool (Class::*check)(const QVariant&),
-        GroupId group = 0
+        const QString& key, const QVariant& default_value, Class* object, bool (Class::*check_func)(const QVariant&)
     );
 
     /**
      * @brief deRegisterSetting 注销设置
-     * @param key 设置的键
+     * @param key 注册过的键
      */
-    static void deRegisterSetting(const QString& key);
-
-    /**
-     * @brief deRegisterSetting 注销设置
-     * @param key 设置的键
-     */
-    static void deRegisterSettings(const QStringList& keys);
+    static void deRegisterSetting(const QString& key) { instance().m_regedit.removeData(key); }
 
     /**
      * @brief deRegisterSettings 注销设置
-     * @param group 分组号
+     * @param dir 存在的组
      */
-    static void deRegisterSettings(GroupId group);
+    static void deRegisterGroup(const QString& dir) { instance().m_regedit.removeGroup(dir); }
 
     /**
      * @brief deRegisterAllSettings 注销所有设置
      */
-    static void deRegisterAllSettings();
+    static void deRegisterAllSettings() { instance().m_regedit.clear(); }
 
     /**
      * @brief writeValue 写入设置
-     * @param key 设置的键
+     * @param key 注册过的键
      * @param value 设置的值
      * @param emitRead 是否触发读取设置信号
      * @return 是否写入成功
@@ -183,7 +150,7 @@ public:
 
     /**
      * @brief readValue 读取设置
-     * @param key 设置的键
+     * @param key 注册过的键
      * @param func 读取设置的回调函数
      */
     template <typename Func>
@@ -191,35 +158,32 @@ public:
 
     /**
      * @brief readValue 读取设置
-     * @param key 设置的键
+     * @param key 注册过的键
      * @param obj 对象
      * @param func 对象成员函数读取设置的回调函数
      */
     template <typename Func>
-    static void readValue(const QString& key, lzl::utils::trains_class_type<Func>* obj, Func func);
+    static void readValue(const QString& key, trains_class_type<Func>* obj, Func func);
 
     /**
      * @brief connectReadValue 连接读取设置
-     * @param key 设置的键
+     * @param key 注册过的键
      * @param func 读取设置的回调函数
-     * @param group 分组号
      * @return 连接的 id
      */
     template <typename Func, typename = std::enable_if_t<!std::is_member_function_pointer<Func>::value>>
-    static ConnId connectReadValue(const QString& key, Func func, GroupId group = 0);
+    static ConnId connectReadValue(const QString& key, Func func);
 
     /**
      * @brief connectReadValue 连接读取设置
-     * @param key 设置的键
+     * @param key 注册过的键
      * @param obj 对象
      * @param func 对象成员函数读取设置的回调函数
      * @param group 分组号
      * @return 连接的 id
      */
     template <typename Func, typename = std::enable_if_t<std::is_member_function_pointer<Func>::value>>
-    static ConnId connectReadValue(
-        const QString& key, lzl::utils::trains_class_type<Func>* obj, Func func, GroupId group = 0
-    );
+    static ConnId connectReadValue(const QString& key, trains_class_type<Func>* obj, Func func);
 
     /**
      * @brief disconnectReadValue 断开连接读取设置
@@ -228,124 +192,164 @@ public:
     static void disconnectReadValue(ConnId id);
 
     /**
-     * @brief disconnectReadValue 断开分组的连接
-     * @param group 分组号
+     * @brief disconnectReadValuesFromKey 断开连接读取设置
+     * @param key 注册过的键
      */
-    static void disconnectReadValue(GroupId group);
+    static void disconnectReadValuesFromKey(const QString& key);
 
     /**
-     * @brief disconnectAllReadValues 断开所有读取设置连接
+     * @brief disconnectReadValuesFromGroup 断开连接读取设置
+     * @param dir 存在的组
      */
-    static void disconnectAllReadValues();
+    static void disconnectReadValuesFromGroup(const QString& dir);
 
     /**
-     * @brief emitReadValue 触发读取设置信号
-     * @param key 设置的键
+     * @brief disconnectAllSettingsReadValues 断开所有读取设置连接
      */
-    static void emitReadValue(const QString& key);
+    static void disconnectAllSettingsReadValues();
 
     /**
-     * @brief emitReadValues 触发读取设置信号
-     * @param keys 设置的键列表
+     * @brief emitReadValuesFromKey 触发读取设置信号
+     * @param key 注册过的键
      */
-    static void emitReadValues(const QStringList& keys);
+    static void emitReadValuesFromKey(const QString& key);
 
     /**
-     * @brief emitReadValue 触发读取设置信号
-     * @param group 分组号
+     * @brief emitReadValuesFromGroup 触发读取设置信号
+     * @param dir 存在的组
      */
-    static void emitReadValues(GroupId group);
+    static void emitReadValuesFromGroup(const QString& dir);
 
     /**
-     * @brief emitReadAllValues 触发所有读取设置信号
+     * @brief emitAllSettingsReadValues 触发所有读取设置信号
      */
-    static void emitReadAllValues();
+    static void emitAllSettingsReadValues();
 
     /**
-     * @brief readValueIds 读取设置的 id 列表
-     * @param key 设置的键 为空则返回所有 id 列表
+     * @brief getConnIds 获取所有连接的 id 列表
      * @return id 列表
      */
-    static QList<Settings::ConnId> readValueIds(const QString& key = QString());
+    static QList<ConnId> getConnIds() { return s_conns.keys(); }
 
 private:
     static Settings& instance();
-
-    Settings(const QString& filename);
+    explicit Settings(const QString& filename, QObject* parent = nullptr);
     ~Settings() = default;
 
-    struct RegRecord
+private:
+    struct RegData
     {
-        QString key;
-        std::function<bool(const QVariant&)> check = nullptr;
         QVariant default_value = {};
-        GroupId group = 0;
-        mutable QMap<ConnId, GroupId> conns = {};
-        friend bool operator==(const RegRecord& lhs, const RegRecord& rhs) { return lhs.key == rhs.key; }
-        friend auto qHash(const RegRecord& setting) { return qHash(setting.key); }
+        std::function<bool(const QVariant&)> check = nullptr;
+        mutable QList<ConnId> conns = {};
+        ~RegData();
+    };
+    struct RegGroup
+    {
+        using DataSet = QMap<QString, RegData>;
+        using GroupSet = QMap<QString, RegGroup>;
+        DataSet dataset;
+        GroupSet groupset;
+
+        bool isEmpty() const { return dataset.isEmpty() && groupset.isEmpty(); }
+        void clear()
+        {
+            dataset.clear();
+            groupset.clear();
+        }
+
+        using dataset_iterator = DataSet::iterator;
+        using groupset_iterator = GroupSet::iterator;
+
+        dataset_iterator dataEnd() { return dataset.end(); }
+        groupset_iterator groupEnd() { return groupset.end(); }
+
+        bool containsData(const QString& key) { return findData(key) != dataEnd(); }
+        bool containsGroup(const QString& dir) { return findGroup(dir) != groupEnd(); }
+        bool containsGroup(const QStringList& dir) { return findGroup(dir) != groupEnd(); }
+
+        dataset_iterator findData(const QString& key);
+        groupset_iterator findGroup(const QString& dir);
+        groupset_iterator findGroup(const QStringList& dir);
+
+        void insertData(const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check);
+        void removeData(const QString& key);
+        void removeGroup(const QString& dir);
+
+        static QStringList detachPath(const QString& path);
+        static QPair<QStringList, QString> parsePath(const QString& path);
     };
 
-    using SetType = QSet<RegRecord>;
-    SetType m_regedit;
+    RegGroup m_regedit;
     QSettings m_q_settings;
-    QMap<GroupId, QSet<QString>> m_regs_groups;
-    QMap<GroupId, QSet<ConnId>> m_conns_groups;
-    QMap<ConnId, QPair<std::function<void(void)>, QString>> m_conns;
 
 private:
-    SetType::iterator find(const QString& key);
+    RegGroup::dataset_iterator findRecord(const QString& key);
+    RegGroup::groupset_iterator findRegGroup(const QString& dir);
     QVariant getValue(const QString& key);
+
+private:
     static ConnId idGenerator();
+
+private:
+    static QMap<ConnId, QPair<std::function<void(void)>, std::function<void(void)>>> s_conns;
 };
 
 /* ========================================================================== */
 
-template <typename Class>
 inline void Settings::registerSetting(
-    const QString& key, const QVariant& default_value, Class* obj, bool (Class::*check)(const QVariant&), GroupId group
+    const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check
 )
 {
-    registerSetting(key, default_value, std::bind(check, obj, std::placeholders::_1), group);
+    instance().m_regedit.insertData(key, default_value, check);
+}
+
+template <typename Class>
+inline void Settings::registerSetting(
+    const QString& key, const QVariant& default_value, Class* obj, bool (Class::*check)(const QVariant&)
+)
+{
+    registerSetting(key, default_value, [obj, check](const QVariant& value) { return (obj->*check)(value); });
 }
 
 template <typename Func>
 inline void Settings::readValue(const QString& key, Func func)
 {
-    using arg_type = typename lzl::utils::function_traits<Func>::template arg<0>::type;
-    Q_STATIC_ASSERT(lzl::utils::function_traits<Func>::arity == 1);
-    func(lzl::utils::ConvertQVariant<arg_type>::convert(instance().getValue(key)));
+    using arg_type = typename function_traits<Func>::template arg<0>::type;
+    Q_STATIC_ASSERT(function_traits<Func>::arity == 1);
+    func(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
 }
 
 template <typename Func>
-inline void Settings::readValue(const QString& key, lzl::utils::trains_class_type<Func>* obj, Func func)
+inline void Settings::readValue(const QString& key, trains_class_type<Func>* obj, Func func)
 {
-    using arg_type = typename lzl::utils::function_traits<Func>::template arg<0>::type;
-    Q_STATIC_ASSERT(lzl::utils::function_traits<Func>::arity == 1);
-    (obj->*func)(lzl::utils::ConvertQVariant<arg_type>::convert(instance().getValue(key)));
+    using arg_type = typename function_traits<Func>::template arg<0>::type;
+    Q_STATIC_ASSERT(function_traits<Func>::arity == 1);
+    (obj->*func)(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
 }
 
 template <typename Func, typename>
-inline Settings::ConnId Settings::connectReadValue(const QString& key, Func func, GroupId group)
+inline Settings::ConnId Settings::connectReadValue(const QString& key, Func func)
 {
     auto id = idGenerator();
-    instance().find(key)->conns.insert(id, group);
-    instance().m_conns_groups[group].insert(id);
-    instance().m_conns.insert(id, {[key, func]() { instance().readValue(key, func); }, key});
+    auto data = &(instance().findRecord(key).value());
+    data->conns.append(id);
+    s_conns.insert(
+        id,
+        {
+            [key, func]() { instance().readValue(key, func); },
+            [data, id]() { data->conns.removeOne(id); },
+        }
+    );
     return id;
 }
 
 template <typename Func, typename>
-inline Settings::ConnId Settings::connectReadValue(
-    const QString& key, lzl::utils::trains_class_type<Func>* obj, Func func, GroupId group
-)
+inline Settings::ConnId Settings::connectReadValue(const QString& key, trains_class_type<Func>* obj, Func func)
 {
-    auto id = idGenerator();
-    instance().find(key)->conns.insert(id, group);
-    instance().m_conns_groups[group].insert(id);
-    instance().m_conns.insert(id, {[key, obj, func]() { instance().readValue(key, obj, func); }, key});
-    return id;
+    return connectReadValue(key, [obj, func](auto&& value) { (obj->*func)(std::forward<decltype(value)>(value)); });
 }
 
-} // namespace lzl
+} // namespace lzl::utils
 
 #endif // ___LZL_QT_UTILS__LZL_QT_SETTINGS_H__

@@ -56,36 +56,36 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     auto font = QApplication::font();
 #if USE_LZL_QT_SETTINGS
-    // 注册设置
-    lzl::Settings::registerSetting(
-        "app/font/size",
-        font.pointSizeF() * 1.728,
-        [](const QVariant& value) {
-            return value.canConvert<double>() && 4 < value.toDouble() && value.toDouble() < 64;
-        },
-        1
-    );
-    lzl::Settings::registerSetting(
-        "app/size", this->size(), [](const QVariant& value) { return value.canConvert<QSize>(); }, 1
-    );
-    lzl::Settings::registerSetting(
-        "app/pos", this->pos(), [](const QVariant& value) { return value.canConvert<QPoint>(); }, 1
-    );
-    // 绑定设置事件
-    lzl::Settings::connectReadValue(
-        "app/font/size",
-        [button1](double size) {
-            auto font = QApplication::font();
-            font.setPointSizeF(size);
-            QApplication::setFont(font);
-            button1->setFont(font);
-        },
-        2
-    );
-    lzl::Settings::connectReadValue("app/size", [this](QSize size) { this->resize(size); }, 2);
-    lzl::Settings::connectReadValue("app/pos", [this](QPoint pos) { this->move(pos); }, 2);
-    // 读取设置
-    lzl::Settings::emitReadValues(2);
+    // // 注册设置
+    // lzl::Settings::registerSetting(
+    //     "app/font/size",
+    //     font.pointSizeF() * 1.728,
+    //     [](const QVariant& value) {
+    //         return value.canConvert<double>() && 4 < value.toDouble() && value.toDouble() < 64;
+    //     },
+    //     1
+    // );
+    // lzl::Settings::registerSetting(
+    //     "app/size", this->size(), [](const QVariant& value) { return value.canConvert<QSize>(); }, 1
+    // );
+    // lzl::Settings::registerSetting(
+    //     "app/pos", this->pos(), [](const QVariant& value) { return value.canConvert<QPoint>(); }, 1
+    // );
+    // // 绑定设置事件
+    // lzl::Settings::connectReadValue(
+    //     "app/font/size",
+    //     [button1](double size) {
+    //         auto font = QApplication::font();
+    //         font.setPointSizeF(size);
+    //         QApplication::setFont(font);
+    //         button1->setFont(font);
+    //     },
+    //     2
+    // );
+    // lzl::Settings::connectReadValue("app/size", [this](QSize size) { this->resize(size); }, 2);
+    // lzl::Settings::connectReadValue("app/pos", [this](QPoint pos) { this->move(pos); }, 2);
+    // // 读取设置
+    // lzl::Settings::emitReadValues(2);
 #else
     // ***
     connect(this, &MainWindow::fontSizeChange, this, [button1](double sizeF) {
@@ -122,7 +122,7 @@ MainWindow::~MainWindow()
     delete ui;
 #if USE_LZL_QT_SETTINGS
     // 注销设置
-    lzl::Settings::deRegisterSettings(1);
+    // lzl::Settings::deRegisterSettings(1);
 #endif
 }
 
@@ -137,7 +137,7 @@ void MainWindow::on_pushButton_2_clicked()
     auto font = QApplication::font();
     font.setPointSizeF(font.pointSizeF() / 1.2);
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
+    // lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
 #else
     if (font.pointSizeF() < 4)
     {
@@ -154,7 +154,7 @@ void MainWindow::on_pushButton_clicked()
     auto font = QApplication::font();
     font.setPointSizeF(font.pointSizeF() * 1.2);
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
+    // lzl::Settings::writeValue("app/font/size", font.pointSizeF(), true);
 #else
     if (font.pointSizeF() > 64)
     {
@@ -185,7 +185,7 @@ void MainWindow::moveEvent(QMoveEvent* event)
 {
     QWidget::moveEvent(event);
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::writeValue("app/pos", this->pos());
+    // lzl::Settings::writeValue("app/pos", this->pos());
 #else
     QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/pos", this->pos());
 #endif
@@ -195,7 +195,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::writeValue("app/size", this->size());
+    // lzl::Settings::writeValue("app/size", this->size());
 #else
     QSettings(CONFIG_INI, QSettings::IniFormat).setValue("app/size", this->size());
 #endif
@@ -203,23 +203,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 #include <QDebug>
 void MainWindow::on_pushButton_3_clicked()
 {
-    auto s = QSettings(CONFIG_INI, QSettings::IniFormat);
-    s.setValue("1234/123", "123");
-    qDebug() << s.contains("1234");
-    qDebug() << s.group();
-    qDebug() << s.allKeys();
-    qDebug() << s.childKeys();
-    qDebug() << s.childGroups();
-    s.beginGroup("app");
-    qDebug() << s.group();
-    qDebug() << s.allKeys();
-    qDebug() << s.childKeys();
-    qDebug() << s.childGroups();
-
 #if USE_LZL_QT_SETTINGS
-    // lzl::Settings::reset(1);
-    // QSettings(CONFIG_INI, QSettings::IniFormat).childGroups()
-    // QSettings(CONFIG_INI, QSettings::IniFormat).remove("app");
 #else
     QSettings(CONFIG_INI, QSettings::IniFormat).clear();
 #endif
