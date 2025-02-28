@@ -61,6 +61,32 @@ function(copy_lib_i_headers)
     endif()
 endfunction()
 
+# Find `shared_exports.h.in` and `static_exports.h.in`
+if(NOT STATIC_LIBRARY_EXPORTS_H_IN AND NOT SHARED_LIBRARY_EXPORTS_H_IN)
+    # 遍历CMAKE_MODULE_PATH中的每个目录
+    foreach(MODULE_DIR ${CMAKE_MODULE_PATH})
+        if(EXISTS "${MODULE_DIR}/shared_exports.h.in")
+            set(SHARED_LIBRARY_EXPORTS_H_IN ${MODULE_DIR}/shared_exports.h.in)
+            message(STATUS "Find `SHARED_LIBRARY_EXPORTS_H_IN`: ${SHARED_LIBRARY_EXPORTS_H_IN}")
+        endif()
+
+        if(EXISTS "${MODULE_DIR}/static_exports.h.in")
+            set(STATIC_LIBRARY_EXPORTS_H_IN ${MODULE_DIR}/static_exports.h.in)
+            message(STATUS "Find `STATIC_LIBRARY_EXPORTS_H_IN`: ${STATIC_LIBRARY_EXPORTS_H_IN}")
+        endif()
+
+        if(STATIC_LIBRARY_EXPORTS_H_IN AND SHARED_LIBRARY_EXPORTS_H_IN)
+            break()
+        endif()
+    endforeach()
+
+    if(NOT STATIC_LIBRARY_EXPORTS_H_IN)
+        message(FATAL_ERROR "static_exports.h.in not found!")
+    elseif(NOT SHARED_LIBRARY_EXPORTS_H_IN)
+        message(FATAL_ERROR "shared_exports.h.in not found!")
+    endif()
+endif()
+
 # Function to generate library exports headers
 # Arguments:
 # + TARGET - Target name (Required)
@@ -103,13 +129,11 @@ function(generate_lib_exports_header)
     # Get target type
     get_target_property(target_type ${TARGET} TYPE)
 
-    # Set template file based on target type
-    set(template_file "${CMAKE_SOURCE_DIR}/cmake")
-
+    # Set template file
     if(target_type STREQUAL "STATIC_LIBRARY")
-        set(template_file "${template_file}/static_exports.h.in")
+        set(template_file ${STATIC_LIBRARY_EXPORTS_H_IN})
     elseif(target_type STREQUAL "SHARED_LIBRARY")
-        set(template_file "${template_file}/shared_exports.h.in")
+        set(template_file ${SHARED_LIBRARY_EXPORTS_H_IN})
     else()
         message(FATAL_ERROR "Unsupported target type: ${target_type}")
     endif()
