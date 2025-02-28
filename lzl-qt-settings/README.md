@@ -276,7 +276,7 @@ lzl::Settings::connectReadValue("app/font/size", [button1](double size) {
     button1->setFont(font);
 });
 lzl::Settings::connectReadValue("app/window/size", [this](QSize size) { this->resize(size); });
-lzl::Settings::connectReadValue("app/window/pos", [this](QPoint pos) { this->move(pos); });
+lzl::Settings::connectReadValue("app/window/pos", this, &MainWindow::move); // 这里不要有多参数重载，否则 lambda 是更好的选择
 ```
 
 #### 解除绑定读取事件

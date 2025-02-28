@@ -310,13 +310,6 @@ private:
     RegGroup::groupset_iterator findRegGroup(const QString& dir);
     QVariant getValue(const QString& key);
 
-    // 静态的辅助函数
-private:
-    static ConnId idGenerator();
-
-    // 用作递归
-    static void readValueFromGroup(const RegGroup* group);
-
     // 静态数据
 private:
     struct ConnFunctions
@@ -325,6 +318,14 @@ private:
         std::function<void(void)> disconnect;
     };
     static QMap<ConnId, ConnFunctions> s_conns;
+
+    // 静态的辅助函数
+private:
+    static ConnId idGenerator();
+    static ConnId insertConn(ConnFunctions&& funcs);
+
+    // 用作递归
+    static void readValueFromGroup(const RegGroup* group);
 };
 
 // 下面是模板函数的实现
@@ -359,25 +360,23 @@ inline void Settings::readValue(const QString& key, trains_class_type<Func>* obj
 template <typename Func, typename>
 inline Settings::ConnId Settings::connectReadValue(const QString& key, Func read_func)
 {
-    auto id = idGenerator();
-    auto data = &(instance().findRecord(key).value());
-    data->conns.append(id);
-    s_conns.insert(
-        id,
-        {
-            [key, read_func]() { instance().readValue(key, read_func); },
-            [data, id]() { data->conns.removeOne(id); },
-        }
-    );
+    auto id = insertConn({
+        [key, read_func]() { instance().readValue(key, read_func); },
+        [key]() { instance().disconnectReadValuesFromKey(key); },
+    });
+    instance().findRecord(key)->conns.append(id);
     return id;
 }
 
 template <typename Func, typename>
 inline Settings::ConnId Settings::connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func)
 {
-    return connectReadValue(key, [object, read_func](auto&& value) {
-        (object->*read_func)(std::forward<decltype(value)>(value));
+    auto id = insertConn({
+        [key, object, read_func]() { instance().readValue(key, object, read_func); },
+        [key]() { instance().disconnectReadValuesFromKey(key); },
     });
+    instance().findRecord(key)->conns.append(id);
+    return id;
 }
 
 } // namespace lzl::utils

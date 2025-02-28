@@ -25,12 +25,12 @@
 #if USE_LZL_QT_SETTINGS
 namespace lzl::utils {
 template <>
-struct ConvertQVariant<QSize>
+struct ConvertQVariant<const QSize&>
 {
     static auto convert(const QVariant& value) { return value.toSize(); }
 };
 template <>
-struct ConvertQVariant<QPoint>
+struct ConvertQVariant<const QPoint&>
 {
     static auto convert(const QVariant& value) { return value.toPoint(); }
 };
@@ -99,8 +99,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         QApplication::setFont(font);
         button1->setFont(font);
     });
-    id2 = lzl::Settings::connectReadValue("app/window/size", [this](QSize size) { this->resize(size); });
-    id3 = lzl::Settings::connectReadValue("app/window/pos", [this](QPoint pos) { this->move(pos); });
+    id2 = lzl::Settings::connectReadValue("app/window/size", this, &MainWindow::resize);
+    id3 = lzl::Settings::connectReadValue("app/window/pos", this, &MainWindow::move);
     // 读取设置
     lzl::Settings::emitReadValuesFromGroup("app");
 #else

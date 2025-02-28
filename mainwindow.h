@@ -26,6 +26,10 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
+public:
+    void resize(const QSize& size) { QMainWindow::resize(size); }
+    void move(const QPoint& pos) { QMainWindow::move(pos); }
+
 private slots:
     void on_plainTextEdit_3_cursorPositionChanged();
 

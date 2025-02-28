@@ -316,6 +316,8 @@ QVariant Settings::getValue(const QString& key)
 // 主类静态辅助函数的实现
 /* ========================================================================== */
 
+QMap<Settings::ConnId, Settings::ConnFunctions> Settings::s_conns = {};
+
 Settings::ConnId Settings::idGenerator()
 {
     static ConnId id = 0;
@@ -326,7 +328,12 @@ Settings::ConnId Settings::idGenerator()
     return id;
 }
 
-QMap<Settings::ConnId, Settings::ConnFunctions> Settings::s_conns = {};
+Settings::ConnId Settings::insertConn(ConnFunctions&& funcs)
+{
+    auto id = idGenerator();
+    s_conns.insert(id, std::move(funcs));
+    return id;
+}
 
 /* ========================================================================== */
 
