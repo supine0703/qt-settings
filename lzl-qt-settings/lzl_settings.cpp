@@ -254,18 +254,25 @@ void Settings::emitReadValue(ConnId id)
     s_conns[id].read();
 }
 
+void Settings::emitReadValues(const QList<ConnId>& ids)
+{
+    for (auto& id : std::as_const(ids))
+    {
+        emitReadValue(id);
+    }
+}
+
 void Settings::emitReadValuesFromKey(const QString& key)
 {
-    auto data_it = instance().findRecord(key);
-    for (auto& conn : std::as_const(data_it->conns))
-    {
-        emitReadValue(conn);
-    }
+    emitReadValues(instance().findRecord(key)->conns);
 }
 
 void Settings::emitReadValuesFromGroup(const QString& dir)
 {
-    readValueFromGroup(&(instance().findRegGroup(dir).value()));
+    QList<ConnId> conns;
+    readValueFromGroup(&(instance().findRegGroup(dir).value()), conns);
+    std::sort(conns.begin(), conns.end());
+    emitReadValues(conns);
 }
 
 void Settings::emitAllSettingsReadValues()
@@ -325,7 +332,7 @@ Settings::ConnId Settings::idGenerator()
     {
         ++id;
     } while (id.isNull() || s_conns.contains(id));
-    return id;
+    return id; // 理论上不会轮回到 0
 }
 
 Settings::ConnId Settings::insertConn(ConnFunctions&& funcs)
@@ -337,19 +344,19 @@ Settings::ConnId Settings::insertConn(ConnFunctions&& funcs)
 
 /* ========================================================================== */
 
-void Settings::readValueFromGroup(const RegGroup* group)
+void Settings::readValueFromGroup(const RegGroup* group, QList<ConnId>& conns)
 {
     // 读取数据
     for (auto& data : std::as_const(group->dataset))
     {
         for (auto& conn : std::as_const(data.conns))
         {
-            emitReadValue(conn);
+            conns.append(conn);
         }
     }
     // 递归读取子组
     for (auto& subGroup : std::as_const(group->groupset))
     {
-        readValueFromGroup(&subGroup);
+        readValueFromGroup(&subGroup, conns);
     }
 }

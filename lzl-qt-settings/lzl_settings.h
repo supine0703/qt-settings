@@ -224,6 +224,12 @@ public:
     static void emitReadValue(ConnId id);
 
     /**
+     * @brief emitReadValues 触发读取事件信号
+     * @param ids 读取事件的 id 列表
+     */
+    static void emitReadValues(const QList<ConnId>& ids);
+
+    /**
      * @brief emitReadValuesFromKey 触发读取事件信号
      * @param key 注册过的键
      */
@@ -325,7 +331,7 @@ private:
     static ConnId insertConn(ConnFunctions&& funcs);
 
     // 用作递归
-    static void readValueFromGroup(const RegGroup* group);
+    static void readValueFromGroup(const RegGroup* group, QList<ConnId>& conns);
 };
 
 // 下面是模板函数的实现

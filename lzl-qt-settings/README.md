@@ -197,6 +197,12 @@ public:
     static void emitReadValue(ConnId id);
 
     /**
+     * @brief emitReadValues 触发读取事件信号
+     * @param ids 读取事件的 id 列表
+     */
+    static void emitReadValues(const QList<ConnId>& ids);
+
+    /**
      * @brief emitReadValuesFromKey 触发读取事件信号
      * @param key 注册过的键
      */

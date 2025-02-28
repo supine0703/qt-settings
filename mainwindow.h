@@ -9,8 +9,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QDebug>
 #include <QLabel>
 #include <QMainWindow>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,8 +29,16 @@ public:
     ~MainWindow();
 
 public:
-    void resize(const QSize& size) { QMainWindow::resize(size); }
-    void move(const QPoint& pos) { QMainWindow::move(pos); }
+    void resize(const QSize& size)
+    {
+        QMainWindow::resize(size);
+        qDebug() << "size: " << size;
+    }
+    void move(const QPoint& pos)
+    {
+        QMainWindow::move(pos);
+        qDebug() << "pos: " << pos;
+    }
 
 private slots:
     void on_plainTextEdit_3_cursorPositionChanged();

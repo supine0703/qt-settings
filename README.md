@@ -239,6 +239,12 @@ public:
     static void emitReadValue(ConnId id);
 
     /**
+     * @brief emitReadValues 触发读取事件信号
+     * @param ids 读取事件的 id 列表
+     */
+    static void emitReadValues(const QList<ConnId>& ids);
+
+    /**
      * @brief emitReadValuesFromKey 触发读取事件信号
      * @param key 注册过的键
      */
@@ -459,9 +465,10 @@ CFG()[_DOCK_TRACKING_] = view_trace_all[2]->isChecked();
 
 ## TODO
 
-1. [ ] 添加返回 `path` 的 `ConnId`
-2. [ ] 添加对全局组操作的支持
-3. [ ] 添加 `.json` 支持
+1. [x] 整组读取有序
+2. [ ] 添加返回 `path` 的 `ConnId`
+3. [ ] 添加对全局组操作的支持
+4. [ ] 添加 `.json` 支持
 
 ## 报告问题
 

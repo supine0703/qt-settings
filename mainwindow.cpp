@@ -12,7 +12,6 @@
 #include "ui_mainwindow.h"
 
 #include <QApplication>
-#include <QDebug>
 #include <QFile>
 #include <QPushButton>
 #include <QScreen>
@@ -98,6 +97,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         font.setPointSizeF(size);
         QApplication::setFont(font);
         button1->setFont(font);
+        qDebug() << "font size:" << size;
     });
     id2 = lzl::Settings::connectReadValue("app/window/size", this, &MainWindow::resize);
     id3 = lzl::Settings::connectReadValue("app/window/pos", this, &MainWindow::move);
