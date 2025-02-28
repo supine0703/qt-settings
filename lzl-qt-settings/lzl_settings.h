@@ -248,9 +248,23 @@ public:
 
     /**
      * @brief getConnIds 获取所有的读取事件 id 列表
-     * @return id 列表
+     * @return id 列表, Q_ASSERT(!id.isNull());
      */
     static QList<ConnId> getConnIds() { return s_conns.keys(); }
+
+    /**
+     * @brief getConnIdsFromKey 获取键的读取事件 id 列表
+     * @param key 注册过的键，不可为空
+     * @return id 列表, Q_ASSERT(!id.isNull());
+     */
+    static QList<ConnId> getConnIdsFromKey(const QString& key);
+
+    /**
+     * @brief getConnIdsFromGroup 获取组的读取事件 id 列表
+     * @param dir 存在的组，不可为空
+     * @return id 列表, Q_ASSERT(!id.isNull());
+     */
+    static QList<ConnId> getConnIdsFromGroup(const QString& dir);
 
     // 构造析构
 private:
@@ -330,9 +344,10 @@ private:
     // 静态的辅助函数
 private:
     static ConnId idGenerator();
-    static ConnId insertConn(ConnFunctions&& funcs);
+    static ConnId insertConn(const RegData* data, std::function<void(void)>&& read_func);
 
-    static void readValueFromGroup(const RegGroup* group, QList<ConnId>& conns); // 用作递归
+    // 用作递归
+    static void getConnIdsFromGroup(const RegGroup* group, QList<ConnId>& conns);
 };
 
 // 下面是模板函数的实现
@@ -367,23 +382,17 @@ inline void Settings::readValue(const QString& key, trains_class_type<Func>* obj
 template <typename Func, typename>
 inline Settings::ConnId Settings::connectReadValue(const QString& key, Func read_func)
 {
-    auto id = insertConn({
-        [key, read_func]() { instance().readValue(key, read_func); },
-        [key]() { instance().disconnectReadValuesFromKey(key); },
+    return insertConn(&(instance().findRecord(key).value()), [key, read_func]() {
+        instance().readValue(key, read_func);
     });
-    instance().findRecord(key)->conns.append(id);
-    return id;
 }
 
 template <typename Func, typename>
 inline Settings::ConnId Settings::connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func)
 {
-    auto id = insertConn({
-        [key, object, read_func]() { instance().readValue(key, object, read_func); },
-        [key]() { instance().disconnectReadValuesFromKey(key); },
+    return insertConn(&(instance().findRecord(key).value()), [key, object, read_func]() {
+        instance().readValue(key, object, read_func);
     });
-    instance().findRecord(key)->conns.append(id);
-    return id;
 }
 
 } // namespace lzl::utils

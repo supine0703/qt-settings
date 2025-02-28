@@ -276,17 +276,12 @@ void Settings::emitReadValues(const QList<ConnId>& ids)
 
 void Settings::emitReadValuesFromKey(const QString& key)
 {
-    Q_ASSERT(!key.isEmpty());
-    emitReadValues(instance().findRecord(key)->conns);
+    emitReadValues(getConnIdsFromKey(key));
 }
 
 void Settings::emitReadValuesFromGroup(const QString& dir)
 {
-    Q_ASSERT(!dir.isEmpty());
-    QList<ConnId> conns;
-    readValueFromGroup(&(instance().findRegGroup(dir).value()), conns);
-    std::sort(conns.begin(), conns.end());
-    emitReadValues(conns);
+    emitReadValues(getConnIdsFromGroup(dir));
 }
 
 void Settings::emitAllSettingsReadValues()
@@ -295,6 +290,21 @@ void Settings::emitAllSettingsReadValues()
     {
         conn.read();
     }
+}
+
+QList<Settings::ConnId> Settings::getConnIdsFromKey(const QString& key)
+{
+    Q_ASSERT(!key.isEmpty());
+    return instance().findRecord(key)->conns;
+}
+
+QList<Settings::ConnId> Settings::getConnIdsFromGroup(const QString& dir)
+{
+    Q_ASSERT(!dir.isEmpty());
+    QList<ConnId> conns;
+    getConnIdsFromGroup(&(instance().findRegGroup(dir).value()), conns);
+    std::sort(conns.begin(), conns.end());
+    return conns;
 }
 
 // 主类的辅助函数的实现
@@ -349,16 +359,20 @@ Settings::ConnId Settings::idGenerator()
     return id; // 理论上不会轮回到 0
 }
 
-Settings::ConnId Settings::insertConn(ConnFunctions&& funcs)
+Settings::ConnId Settings::insertConn(const RegData* data, std::function<void(void)>&& read_func)
 {
     auto id = idGenerator();
-    s_conns.insert(id, std::move(funcs));
+    data->conns.append(id);
+    s_conns[id] = {
+        std::move(read_func),
+        [data, id]() { data->conns.removeOne(id); },
+    };
     return id;
 }
 
 /* ========================================================================== */
 
-void Settings::readValueFromGroup(const RegGroup* group, QList<ConnId>& conns)
+void Settings::getConnIdsFromGroup(const RegGroup* group, QList<ConnId>& conns)
 {
     // 读取数据
     for (auto& data : std::as_const(group->dataset))
@@ -371,6 +385,6 @@ void Settings::readValueFromGroup(const RegGroup* group, QList<ConnId>& conns)
     // 递归读取子组
     for (auto& subGroup : std::as_const(group->groupset))
     {
-        readValueFromGroup(&subGroup, conns);
+        getConnIdsFromGroup(&subGroup, conns);
     }
 }

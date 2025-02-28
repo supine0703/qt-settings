@@ -82,7 +82,7 @@ public:
 
     /**
      * @brief registerSetting 注册设置
-     * @param key 要注册的键
+     * @param key 要注册的键，不可为空
      * @param default_value 默认值
      * @param check_func 检查默认值是否合法
      */
@@ -94,7 +94,7 @@ public:
 
     /**
      * @brief registerSetting 注册设置
-     * @param key 要注册的键
+     * @param key 要注册的键，不可为空
      * @param default_value 默认值
      * @param object 对象
      * @param check_func 对象成员函数检查默认值是否合法
@@ -106,13 +106,13 @@ public:
 
     /**
      * @brief deRegisterSettingKey 注销设置
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      */
     static void deRegisterSettingKey(const QString& key);
 
     /**
      * @brief deRegisterSettingGroup 注销设置
-     * @param dir 存在的组
+     * @param dir 存在的组，不可为空
      */
     static void deRegisterSettingGroup(const QString& dir);
 
@@ -123,7 +123,7 @@ public:
 
     /**
      * @brief writeValue 写入设置
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      * @param value 设置的值
      * @param emit_signal 是否触发读取事件信号
      * @return 是否写入成功
@@ -132,7 +132,7 @@ public:
 
     /**
      * @brief readValue 读取设置
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      * @param read_func 读取设置的回调函数
      */
     template <typename Func>
@@ -140,16 +140,16 @@ public:
 
     /**
      * @brief readValue 读取设置
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      * @param object 对象
-     * @param read_func 对象成员函数读取事件的回调函数
+     * @param read_func 对象成员函数读取设置的回调函数
      */
     template <typename Func>
     static void readValue(const QString& key, trains_class_type<Func>* object, Func read_func);
 
     /**
      * @brief connectReadValue 绑定读取事件
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      * @param read_func 读取设置的回调函数
      * @return 读取事件的 id
      */
@@ -158,7 +158,7 @@ public:
 
     /**
      * @brief connectReadValue 绑定读取事件
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      * @param object 对象
      * @param read_func 对象成员函数读取设置的回调函数
      * @param group 分组号
@@ -175,13 +175,13 @@ public:
 
     /**
      * @brief disconnectReadValuesFromKey 解绑读取事件
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      */
     static void disconnectReadValuesFromKey(const QString& key);
 
     /**
      * @brief disconnectReadValuesFromGroup 解绑读取事件
-     * @param dir 存在的组
+     * @param dir 存在的组，不可为空
      */
     static void disconnectReadValuesFromGroup(const QString& dir);
 
@@ -198,19 +198,19 @@ public:
 
     /**
      * @brief emitReadValues 触发读取事件信号
-     * @param ids 读取事件的 id 列表
+     * @param ids 读取事件的 id 列表, Q_ASSERT(!id.isNull());
      */
     static void emitReadValues(const QList<ConnId>& ids);
 
     /**
      * @brief emitReadValuesFromKey 触发读取事件信号
-     * @param key 注册过的键
+     * @param key 注册过的键，不可为空
      */
     static void emitReadValuesFromKey(const QString& key);
 
     /**
      * @brief emitReadValuesFromGroup 触发读取事件信号
-     * @param dir 存在的组
+     * @param dir 存在的组，不可为空
      */
     static void emitReadValuesFromGroup(const QString& dir);
 
@@ -221,9 +221,23 @@ public:
 
     /**
      * @brief getConnIds 获取所有的读取事件 id 列表
-     * @return id 列表
+     * @return id 列表, Q_ASSERT(!id.isNull());
      */
     static QList<ConnId> getConnIds();
+
+    /**
+     * @brief getConnIdsFromKey 获取键的读取事件 id 列表
+     * @param key 注册过的键，不可为空
+     * @return id 列表, Q_ASSERT(!id.isNull());
+     */
+    static QList<ConnId> getConnIdsFromKey(const QString& key);
+
+    /**
+     * @brief getConnIdsFromGroup 获取组的读取事件 id 列表
+     * @param dir 存在的组，不可为空
+     * @return id 列表, Q_ASSERT(!id.isNull());
+     */
+    static QList<ConnId> getConnIdsFromGroup(const QString& dir);
 };
 ```
 

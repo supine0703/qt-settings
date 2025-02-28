@@ -92,11 +92,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         return false;
     });
     // 绑定设置事件
-    id1 = lzl::Settings::connectReadValue("app/font/size", [button1](double size) {
+    id1 = lzl::Settings::connectReadValue("app/font/size", [this, button1](double size) {
         auto font = QApplication::font();
         font.setPointSizeF(size);
         QApplication::setFont(font);
         button1->setFont(font);
+        this->update();
+        QCoreApplication::processEvents();
         qDebug() << "font size:" << size;
     });
     id2 = lzl::Settings::connectReadValue("app/window/size", this, &MainWindow::resize);
@@ -387,11 +389,18 @@ void MainWindow::on_pushButton_de_window_clicked()
 void MainWindow::on_pushButton_dc_all_clicked()
 {
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::disconnectAllSettingsReadValues();
-    // lzl::Settings::disconnectReadValue(id1);
-    // lzl::Settings::disconnectReadValue(id2);
-    // lzl::Settings::disconnectReadValue(id3);
-    ui->plainTextEdit_3->appendPlainText("所有读取设置事件断开连接！");
+    if (lzl::Settings::getConnIds().isEmpty())
+    {
+        ui->plainTextEdit_3->appendPlainText("无连接！");
+    }
+    else
+    {
+        lzl::Settings::disconnectAllSettingsReadValues();
+        // lzl::Settings::disconnectReadValue(id1);
+        // lzl::Settings::disconnectReadValue(id2);
+        // lzl::Settings::disconnectReadValue(id3);
+        ui->plainTextEdit_3->appendPlainText("所有读取设置事件断开连接！");
+    }
 #else
     ui->plainTextEdit_3->appendPlainText("常规方法不支持断开连接！");
 #endif
@@ -400,8 +409,22 @@ void MainWindow::on_pushButton_dc_all_clicked()
 void MainWindow::on_pushButton_dc_font_clicked()
 {
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::disconnectReadValuesFromKey("app/font/size");
-    ui->plainTextEdit_3->appendPlainText("键 app/font/size 读取设置事件断开连接！");
+    if (lzl::Settings::containsKey("app/font/size"))
+    {
+        if (lzl::Settings::getConnIdsFromGroup("app/font").isEmpty())
+        {
+            ui->plainTextEdit_3->appendPlainText("组 app/font 无连接！");
+        }
+        else
+        {
+            lzl::Settings::disconnectReadValuesFromKey("app/font/size");
+            ui->plainTextEdit_3->appendPlainText("键 app/font/size 读取设置事件断开连接！");
+        }
+    }
+    else
+    {
+        ui->plainTextEdit_3->appendPlainText("app/font/size 已注销！");
+    }
 #else
     ui->plainTextEdit_3->appendPlainText("常规方法不支持断开连接！");
 #endif
@@ -410,8 +433,22 @@ void MainWindow::on_pushButton_dc_font_clicked()
 void MainWindow::on_pushButton_dc_window_clicked()
 {
 #if USE_LZL_QT_SETTINGS
-    lzl::Settings::disconnectReadValuesFromGroup("app/window");
-    ui->plainTextEdit_3->appendPlainText("组 app/window 读取设置事件断开连接！");
+    if (lzl::Settings::containsGroup("app/window"))
+    {
+        if (lzl::Settings::getConnIdsFromGroup("app/window").isEmpty())
+        {
+            ui->plainTextEdit_3->appendPlainText("组 app/window 无连接！");
+        }
+        else
+        {
+            lzl::Settings::disconnectReadValuesFromGroup("app/window");
+            ui->plainTextEdit_3->appendPlainText("组 app/window 读取设置事件断开连接！");
+        }
+    }
+    else
+    {
+        ui->plainTextEdit_3->appendPlainText("app/window 已注销！");
+    }
 #else
     ui->plainTextEdit_3->appendPlainText("常规方法不支持断开连接！");
 #endif
