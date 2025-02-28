@@ -6,7 +6,7 @@
     Repository: qt-settings <https://github.com/supine0703/qt-settings>
 ]]
 
-project(lzl-qt-settings VERSION 0.3.0 LANGUAGES CXX)
+project(lzl-qt-settings VERSION 0.3.1 LANGUAGES CXX)
 
 set(SOURCES_FILES
     settings
