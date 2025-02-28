@@ -1,8 +1,10 @@
+
 > License: MIT LGPL-2.1  
-> Copyright (c) 2024 李宗霖 (Li Zonglin)  
+> Copyright (c) 2024-2025 李宗霖 (Li Zonglin)  
 > Email: supine0703@outlook.com  
 > GitHub: https://github.com/supine0703  
-
+> Repository: lzl-cpp-lib <https://github.com/supine0703/lzl-cpp-lib>
+> Repository: qt-settings <https://github.com/supine0703/qt-settings>
 
 # lzl-qt-settings <!-- omit in toc -->
 
