@@ -21,7 +21,7 @@ namespace lzl::utils {
 
 /** 
  * @version 0.3.x
- * @note 0.3 之后启用 GroupId 而是直接使用路径作为分组（分节）
+ * @note 0.3 之后弃用 GroupId 而是直接使用路径作为分组（分节）
  * @note 注意变量名的含义：
  *   - @param key 设置的键，是完整路径，如：app/font/size
  *   - @param dir 组的路径，是完整路径，如：app/font
@@ -39,7 +39,7 @@ class LZL_QT_SETTINGS_EXPORT Settings final
     // 对外的接口
 public:
     /**
-     * @brief ConnId 连接的 id 类
+     * @brief ConnId 绑定读取事件的 id 类
      */
     class ConnId final
     {
@@ -151,7 +151,7 @@ public:
      * @brief writeValue 写入设置
      * @param key 注册过的键
      * @param value 设置的值
-     * @param emit_signal 是否触发读取设置信号
+     * @param emit_signal 是否触发读取事件信号
      * @return 是否写入成功
      */
     static bool writeValue(const QString& key, const QVariant& value, bool emit_signal = false);
@@ -174,67 +174,73 @@ public:
     static void readValue(const QString& key, trains_class_type<Func>* object, Func read_func);
 
     /**
-     * @brief connectReadValue 连接读取设置
+     * @brief connectReadValue 绑定读取事件
      * @param key 注册过的键
      * @param read_func 读取设置的回调函数
-     * @return 连接的 id
+     * @return 读取事件的 id
      */
     template <typename Func, typename = std::enable_if_t<!std::is_member_function_pointer<Func>::value>>
     static ConnId connectReadValue(const QString& key, Func read_func);
 
     /**
-     * @brief connectReadValue 连接读取设置
+     * @brief connectReadValue 绑定读取事件
      * @param key 注册过的键
      * @param object 对象
      * @param read_func 对象成员函数读取设置的回调函数
      * @param group 分组号
-     * @return 连接的 id
+     * @return 读取事件的 id
      */
     template <typename Func, typename = std::enable_if_t<std::is_member_function_pointer<Func>::value>>
     static ConnId connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func);
 
     /**
-     * @brief disconnectReadValue 断开连接读取设置
-     * @param id 连接的 id, Q_ASSERT(!id.isNull());
+     * @brief disconnectReadValue 解绑读取事件
+     * @param id 读取事件的 id, Q_ASSERT(!id.isNull());
      */
     static void disconnectReadValue(ConnId id);
 
     /**
-     * @brief disconnectReadValuesFromKey 断开连接读取设置
+     * @brief disconnectReadValuesFromKey 解绑读取事件
      * @param key 注册过的键
      */
     static void disconnectReadValuesFromKey(const QString& key);
 
     /**
-     * @brief disconnectReadValuesFromGroup 断开连接读取设置
+     * @brief disconnectReadValuesFromGroup 解绑读取事件
      * @param dir 存在的组
      */
     static void disconnectReadValuesFromGroup(const QString& dir);
 
     /**
-     * @brief disconnectAllSettingsReadValues 断开所有读取设置连接
+     * @brief disconnectAllSettingsReadValues 解绑所有读取事件
      */
     static void disconnectAllSettingsReadValues();
 
     /**
-     * @brief emitReadValuesFromKey 触发读取设置信号
+     * @brief emitReadValue 触发读取事件信号
+     * @param id 读取事件的 id, Q_ASSERT(!id.isNull());
+     */
+    static void emitReadValue(ConnId id);
+
+    /**
+     * @brief emitReadValuesFromKey 触发读取事件信号
      * @param key 注册过的键
      */
     static void emitReadValuesFromKey(const QString& key);
 
     /**
-     * @brief emitReadValuesFromGroup 触发读取设置信号
+     * @brief emitReadValuesFromGroup 触发读取事件信号
      * @param dir 存在的组
      */
     static void emitReadValuesFromGroup(const QString& dir);
 
     /**
-     * @brief emitAllSettingsReadValues 触发所有读取设置信号
+     * @brief emitAllSettingsReadValues 触发所有读取事件信号
      */
     static void emitAllSettingsReadValues();
 
     /**
-     * @brief getConnIds 获取所有连接的 id 列表
+     * @brief getConnIds 获取所有的读取事件 id 列表
      * @return id 列表
      */
     static QList<ConnId> getConnIds() { return s_conns.keys(); }

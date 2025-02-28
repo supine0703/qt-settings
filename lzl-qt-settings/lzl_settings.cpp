@@ -246,17 +246,20 @@ void Settings::disconnectAllSettingsReadValues()
     }
 }
 
+void Settings::emitReadValue(ConnId id)
+{
+    Q_ASSERT_X(
+        s_conns.contains(id), Q_FUNC_INFO, QStringLiteral("Connection not found id: %1").arg(id).toUtf8().constData()
+    );
+    s_conns[id].read();
+}
+
 void Settings::emitReadValuesFromKey(const QString& key)
 {
     auto data_it = instance().findRecord(key);
     for (auto& conn : std::as_const(data_it->conns))
     {
-        Q_ASSERT_X(
-            s_conns.contains(conn),
-            Q_FUNC_INFO,
-            QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
-        );
-        s_conns[conn].read();
+        emitReadValue(conn);
     }
 }
 
@@ -334,12 +337,7 @@ void Settings::readValueFromGroup(const RegGroup* group)
     {
         for (auto& conn : std::as_const(data.conns))
         {
-            Q_ASSERT_X(
-                s_conns.contains(conn),
-                Q_FUNC_INFO,
-                QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
-            );
-            s_conns[conn].read();
+            emitReadValue(conn);
         }
     }
     // 递归读取子组

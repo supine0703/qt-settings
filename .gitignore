@@ -3,3 +3,7 @@ include/
 *.usr
 *.user
 *.vscode
+*.autosave
+*.zip
+*.7z
+*.tar.*

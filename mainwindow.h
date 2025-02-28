@@ -37,6 +37,12 @@ private slots:
 
     void on_pushButton_plus_clicked();
 
+    void on_pushButton_dc_all_clicked();
+
+    void on_pushButton_dc_font_clicked();
+
+    void on_pushButton_dc_window_clicked();
+
 private:
     Ui::MainWindow* ui;
     QLabel* m_label;

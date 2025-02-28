@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(qt-settings-demo VERSION 0.2.3)
+project(qt-settings-demo VERSION 0.2.5)
 
 # ...
 option(WARN_ALL "Enable all warnings" ON)
