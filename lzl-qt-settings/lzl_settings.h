@@ -1,5 +1,5 @@
 /**
- * License: GPL-3.0
+ * License: LGPL-2.1
  * Copyright (c) 2024 李宗霖 (Li Zonglin)
  * Email: supine0703@outlook.com
  * GitHub: https://github.com/supine0703
@@ -28,6 +28,7 @@ namespace lzl::utils {
  *   - @param path 键或组的路径，如：app/font/size、app/font
  *   - @param word 路径的一部分，如：app、font、size
  *   - @param name 路径的最后一部分，如：size、font
+ * @example
  */
 class LZL_QT_SETTINGS_EXPORT Settings final
 {

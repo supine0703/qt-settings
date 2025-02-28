@@ -1,5 +1,5 @@
 /**
- * License: GPL-3.0
+ * License: LGPL-2.1
  * Copyright (c) 2024 李宗霖 (Li Zonglin)
  * Email: supine0703@outlook.com
  * GitHub: https://github.com/supine0703
