@@ -193,7 +193,11 @@ QStringList Settings::RegGroup::detachPath(const QString& path)
 {
     // 如果 path 为空，返回空列表
     static const QRegularExpression re(QStringLiteral(R"([/\\])"));
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     return path.split(re, Qt::SkipEmptyParts);
+#else
+    return path.split(re, QString::SkipEmptyParts);
+#endif
 }
 
 QPair<QStringList, QString> Settings::RegGroup::parsePath(const QString& path)
