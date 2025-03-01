@@ -8,6 +8,12 @@
 
 project(lzl-qt-settings VERSION 0.3.4 LANGUAGES CXX)
 
+# 检查目标是否存在
+if(TARGET ${PROJECT_NAME})
+    message(STATUS "Target '${PROJECT_NAME}' already exists.")
+    return()
+endif()
+
 set(SOURCES_FILES
     settings
     lzl_settings.cpp
