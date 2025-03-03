@@ -14,13 +14,17 @@ if(TARGET ${PROJECT_NAME})
     return()
 endif()
 
-set(SOURCES_FILES
+set(INTERFACE_HEADERS
     settings
-    lzl_settings.cpp
     lzl_settings.h
     lzl_function_traits.h
     lzl_convert_qt_variant.h
+)
+
+set(SOURCES_FILES
+    lzl_settings.cpp
     lzl_lib_settings_exports.h
+    ${INTERFACE_HEADERS}
 )
 
 add_library(${PROJECT_NAME} STATIC
@@ -46,18 +50,24 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # Install
 if(INSTALL_LZL_QT_SETTINGS_LIB)
     install(TARGETS ${PROJECT_NAME}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
+
+    if(INSTALL_INTERFACE_HEADERS)
+        install(FILES ${INTERFACE_HEADERS} lzl_lib_settings_exports.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
+        )
+    endif()
+
     add_auto_install_post_build_if_enable(${PROJECT_NAME})
 endif()
 
 # Copy library interface headers
 copy_lib_i_headers(LIB lzl VERBOSE
     HEADERS_FILES
-    settings
-    lzl_settings.h
-    lzl_function_traits.h
-    lzl_convert_qt_variant.h
+    ${INTERFACE_HEADERS}
 )
 
 # Generate library exports header
