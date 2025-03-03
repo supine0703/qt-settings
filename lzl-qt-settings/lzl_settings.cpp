@@ -25,7 +25,7 @@ Settings& Settings::instance()
 
 Settings::Settings(const QString& filename, QObject* parent) : m_q_settings(filename, QSettings::IniFormat, parent)
 {
-    ::qRegisterMetaType<ConnId>("Settings::ConnId");
+    ::qRegisterMetaType<ConnId>("lzl::utils::Settings::ConnId");
 }
 
 // 注册表相关类的成员函数

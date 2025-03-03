@@ -9,7 +9,9 @@
 #ifndef __LZL_UTILS_CONVERT_QT_VARIANT_H__
 #define __LZL_UTILS_CONVERT_QT_VARIANT_H__
 
+#include <QRect>
 #include <QVariant>
+
 
 namespace lzl::utils {
 
@@ -70,15 +72,27 @@ struct ConvertQVariant<QChar>
 };
 
 template <>
-struct ConvertQVariant<QString>
+struct ConvertQVariant<const QString&>
 {
     static auto convert(const QVariant& value) { return value.toString(); }
 };
 
 template <>
-struct ConvertQVariant<const QString&>
+struct ConvertQVariant<const QRect&>
 {
-    static auto convert(const QVariant& value) { return value.toString(); }
+    static auto convert(const QVariant& value) { return value.toRect(); }
+};
+
+template <>
+struct ConvertQVariant<const QSize&>
+{
+    static auto convert(const QVariant& value) { return value.toSize(); }
+};
+
+template <>
+struct ConvertQVariant<const QPoint&>
+{
+    static auto convert(const QVariant& value) { return value.toPoint(); }
 };
 
 // more ... ...

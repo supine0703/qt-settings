@@ -77,3 +77,38 @@ set(CXX_COMPILER_INFO "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
 # system info
 set(SYSTEM_INFO "${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_VERSION}")
+
+# timezone
+set(TIMEZONE "")
+find_program(PYTHON_EXECUTABLE NAMES python python3)
+
+if(PYTHON_EXECUTABLE)
+    # Find `get_timezone.py`
+    if(NOT GET_TIMEZONE_PY)
+        # 遍历CMAKE_MODULE_PATH中的每个目录
+        foreach(MODULE_DIR ${CMAKE_MODULE_PATH})
+            if(EXISTS "${MODULE_DIR}/get_timezone.py")
+                set(GET_TIMEZONE_PY ${MODULE_DIR}/get_timezone.py)
+                break()
+            endif()
+        endforeach()
+
+        if(NOT GET_TIMEZONE_PY)
+            message(FATAL_ERROR "get_timezone.py not found")
+        endif()
+    endif()
+
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} ${GET_TIMEZONE_PY}
+        OUTPUT_VARIABLE TIMEZONE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    message(STATUS "Timezone: ${TIMEZONE}")
+    set(TIMEZONE "${TIMEZONE} ")
+else()
+    message(WARNING "Python executable not found. Can't get timezone.")
+endif()
+
+# current time
+string(TIMESTAMP CURRENT_TIME "%Y-%m-%d %H:%M:%S")
+set(CURRENT_TIME "${TIMEZONE}${CURRENT_TIME}")
