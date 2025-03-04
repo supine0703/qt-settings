@@ -1,15 +1,16 @@
-/**
- * License: MIT
- * Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
- * Email: supine0703@outlook.com
- * GitHub: https://github.com/supine0703
- */
+/*******************************************************************************
+**
+** License: MIT
+** Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
+** Email: supine0703@outlook.com
+** GitHub: https://github.com/supine0703
+** Repository: https://github.com/supine0703/lzl-cpp-lib
+**
+*******************************************************************************/
 
-#ifndef __AUTO_GENERATED_@EXPORT_MACRO@EXPORTS_H__
-#define __AUTO_GENERATED_@EXPORT_MACRO@EXPORTS_H__
+#ifndef __AUTO_GENERATED_@EXPORT_MACRO@_EXPORTS_H__
+#define __AUTO_GENERATED_@EXPORT_MACRO@_EXPORTS_H__
 
-#include <QtGlobal>
+#define @EXPORT_MACRO@_EXPORT
 
-#define @EXPORT_MACRO@EXPORT
-
-#endif // __AUTO_GENERATED_@EXPORT_MACRO@EXPORTS_H__
+#endif // __AUTO_GENERATED_@EXPORT_MACRO@_EXPORTS_H__

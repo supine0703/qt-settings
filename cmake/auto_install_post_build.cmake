@@ -1,10 +1,3 @@
-#[[ 
-    License: MIT
-    Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
-    Email: supine0703@outlook.com
-    GitHub: https://github.com/supine0703
-]]
-
 # Function to add a post build step to install the target
 # Arguments:
 # + TARGET - Name of the target to install (Required)

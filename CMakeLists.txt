@@ -1,9 +1,9 @@
 #[[
-    License: LGPL-2.1
+    License: GPLv3 LGPLv3
     Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
     Email: supine0703@outlook.com
     GitHub: https://github.com/supine0703
-    Repository: qt-settings <https://github.com/supine0703/qt-settings>
+    Repository: https://github.com/supine0703/qt-settings
 ]]
 
 cmake_minimum_required(VERSION 3.16)
@@ -21,16 +21,22 @@ option(GENERATE_EXPORTS_HEADER_DISABLE_VERBOSE "Disable verbose output for gener
 # 设置 cmake 模块路径
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-# 查找 Qt
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets SerialPort)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets SerialPort)
-
 # 引入相关 cmake 配置
 include(compiler_settings)
 include(copy_lib_interface_headers)
 include(copy_dirs_if_diff)
 include(auto_install_post_build)
+include(generate_lib_exports_header)
 include(GNUInstallDirs)
+
+# Qt auto settings
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+# 查找 Qt
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets SerialPort)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets SerialPort)
 
 # 添加头文件路径
 include_directories(${LIB_INTERFACE_HEADERS_TARGET_PATH})

@@ -1,9 +1,9 @@
 /**
- * License: LGPL-2.1
+ * License: GPLv3 LGPLv3
  * Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
  * Email: supine0703@outlook.com
  * GitHub: https://github.com/supine0703
- * Repository: qt-settings <https://github.com/supine0703/qt-settings>
+ * Repository: https://github.com/supine0703/qt-settings
  */
 
 #include "lzl_settings.h"

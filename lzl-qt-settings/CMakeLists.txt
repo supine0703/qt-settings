@@ -1,9 +1,9 @@
 #[[
-    License: LGPL-2.1
+    License: GPLv3 LGPLv3
     Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
     Email: supine0703@outlook.com
     GitHub: https://github.com/supine0703
-    Repository: qt-settings <https://github.com/supine0703/qt-settings>
+    Repository: https://github.com/supine0703/qt-settings
 ]]
 
 project(lzl-qt-settings VERSION 0.3.4 LANGUAGES CXX)
@@ -16,8 +16,8 @@ endif()
 
 set(INTERFACE_HEADERS
     settings
+    function_traits
     lzl_settings.h
-    lzl_function_traits.h
     lzl_convert_qt_variant.h
 )
 
@@ -68,6 +68,10 @@ endif()
 copy_lib_i_headers(LIB lzl VERBOSE
     HEADERS_FILES
     ${INTERFACE_HEADERS}
+)
+copy_lib_i_headers(LIB lzl/functional/cxx17 VERBOSE
+    HEADERS_FILES
+    functional/cxx17/function_traits.h
 )
 
 # Generate library exports header

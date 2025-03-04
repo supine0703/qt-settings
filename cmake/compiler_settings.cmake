@@ -1,14 +1,7 @@
-#[[ 
-    License: MIT
-    Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
-    Email: supine0703@outlook.com
-    GitHub: https://github.com/supine0703
-]]
+# This file should be included at the beginning whenever possible
 
-# qt auto settings
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+# enable CMake export compile commands
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # c++ and c standard
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -55,20 +48,24 @@ endif()
 # visibility
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT USE_CLANGD)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # clangd check will error if here is set
-    set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+    # set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
 # unix-like RPATH
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_FULL_LIBDIR}" _is_system_platform_lib_dir)
-list(FIND CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_FULL_LIBDIR}" _is_system_cxx_lib_dir)
+if(CMAKE_INSTALL_RPATH)
+    foreach(_path ${CMAKE_INSTALL_RPATH})
+        list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${_path}" _is_system_platform_lib_dir)
+        list(FIND CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "${_path}" _is_system_cxx_lib_dir)
 
-if("${_is_system_platform_lib_dir}" STREQUAL "-1" AND "${_is_system_cxx_lib_dir}" STREQUAL "-1")
-    set(CMAKE_SKIP_BUILD_RPATH FALSE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+        if("${_is_system_platform_lib_dir}" STREQUAL "-1" AND "${_is_system_cxx_lib_dir}" STREQUAL "-1")
+            set(CMAKE_SKIP_BUILD_RPATH FALSE)
+            set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+            set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+            break()
+        endif()
+    endforeach()
 endif()
 
 # compiler info

@@ -1,3 +1,10 @@
+"""
+License: MIT
+Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
+Email: supine0703@outlook.com
+GitHub: https://github.com/supine0703
+Repository: https://github.com/supine0703/lzl-cpp-lib
+"""
 # Get the current timezone offset from UTC in the format UTC±HH:MM
 import time
 
