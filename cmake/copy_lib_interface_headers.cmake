@@ -1,7 +1,6 @@
 if(NOT DEFINED LIB_INTERFACE_HEADERS_INCLUDEDIR)
     set(LIB_INTERFACE_HEADERS_INCLUDEDIR ${CMAKE_SOURCE_DIR}/.include)
 endif()
-include_directories(${LIB_INTERFACE_HEADERS_INCLUDEDIR})
 
 # Function to copy library interface headers
 # Arguments:

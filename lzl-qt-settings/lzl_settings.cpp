@@ -8,7 +8,8 @@
 
 #include "lzl_settings.h"
 
-#include <QDebug>
+#include <QDir>
+#include <QMutex>
 #include <QRegularExpression>
 
 #ifndef CONFIG_INI
@@ -17,15 +18,59 @@
 
 using namespace lzl::utils;
 
+// 实例构造
+/* ========================================================================== */
+
+Settings* Settings::s_instance = nullptr;
+QString Settings::s_ini_directory = {};
+QString Settings::s_ini_fileName = {};
+
 Settings& Settings::instance()
 {
-    static Settings settings(CONFIG_INI);
-    return settings;
+    if (s_instance == nullptr)
+    {
+        static QMutex mutex;
+        QMutexLocker locker(&mutex);
+        if (s_instance == nullptr)
+        {
+            auto ini_path =
+                !s_ini_fileName.isEmpty()
+                    ? QDir(s_ini_directory).filePath(s_ini_fileName)
+                    : (QDir::isRelativePath(CONFIG_INI) ? QDir(s_ini_directory).filePath(CONFIG_INI) : CONFIG_INI);
+            s_instance = new Settings(ini_path);
+        }
+    }
+    return *s_instance;
 }
 
 Settings::Settings(const QString& filename, QObject* parent) : m_q_settings(filename, QSettings::IniFormat, parent)
 {
     ::qRegisterMetaType<ConnId>("lzl::utils::Settings::ConnId");
+}
+
+void Settings::InitIniDirectory(const QString& directory)
+{
+    Q_ASSERT_X(
+        s_instance == nullptr,
+        Q_FUNC_INFO,
+        QStringLiteral("The function must be called before 'Settings' initialization.").toUtf8().constData()
+    );
+    s_ini_directory = directory;
+}
+
+void Settings::InitIniFilePath(const QString& filePath)
+{
+    Q_ASSERT_X(
+        s_instance == nullptr,
+        Q_FUNC_INFO,
+        QStringLiteral("The function must be called before 'Settings' initialization.").toUtf8().constData()
+    );
+    QFileInfo fileinfo(filePath);
+    Q_ASSERT_X(
+        fileinfo.suffix() == "ini", Q_FUNC_INFO, QStringLiteral("The file suffix must be 'ini'.").toUtf8().constData()
+    );
+    s_ini_fileName = fileinfo.fileName();
+    s_ini_directory = fileinfo.path();
 }
 
 // 注册表相关类的成员函数

@@ -75,6 +75,20 @@ public:
     };
 
     /**
+     * @brief InitIniDirectory 设置设置文件的目录
+     * @param directory 目录路径
+     * @note 必须在第一次调用功能之前设置
+     */
+    static void InitIniDirectory(const QString& directory);
+
+    /**
+     * @brief setIniFilename 设置设置文件的文件名
+     * @param filePath 文件完整路径
+     * @note 必须在第一次调用功能之前设置
+     */
+    static void InitIniFilePath(const QString& filePath);
+
+    /**
      * @brief sync 同步设置
      */
     static void sync() { instance().m_q_settings.sync(); }
@@ -271,6 +285,12 @@ private:
     static Settings& instance();
     explicit Settings(const QString& filename, QObject* parent = nullptr);
     ~Settings() = default;
+
+    // 静态实例
+private:
+    static Settings* s_instance;
+    static QString s_ini_directory;
+    static QString s_ini_fileName;
 
     // 定义注册表
 private:
