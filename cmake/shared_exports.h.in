@@ -12,9 +12,9 @@
 #define __AUTO_GENERATED_@EXPORT_MACRO@_EXPORTS_H__
 
 #if defined(@EXPORT_MACRO@_LIBRARY)
-    #define @EXPORT_MACRO@_EXPORT __declspec(dllexport)
+    #define @EXPORT_MACRO@_EXPORT @OS_EXPORT@
 #else
-    #define @EXPORT_MACRO@_EXPORT __declspec(dllimport)
+    #define @EXPORT_MACRO@_EXPORT @OS_IMPORT@
 #endif
 
 #endif // __AUTO_GENERATED_@EXPORT_MACRO@_EXPORTS_H__

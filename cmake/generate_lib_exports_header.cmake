@@ -1,8 +1,8 @@
-
 # Function to generate library exports headers
 # Arguments:
+# + LIB - Library name (Optional)
 # + TARGET - Target name (Required)
-# + MACRO - Macro name (Required)
+# + EXPORT_MACRO - Macro name (Required)
 # + FILE_NAME - File name (Optional, defaults to 'exports.h')
 # + VERBOSE - Optional flag to enable verbose output (Optional)
 # Note: GENERATE_EXPORTS_HEADER_DISABLE_VERBOSE can be set to disable verbose output
@@ -28,6 +28,15 @@ function(generate_lib_exports_header)
     set(TARGET ${ARG_TARGET})
     set(EXPORT_MACRO ${ARG_EXPORT_MACRO})
     set(FILE_NAME ${ARG_FILE_NAME})
+
+    # Set `OS_EXPORT` and `OS_IMPORT`
+    if(WIN32)
+        set(OS_EXPORT "__declspec(dllexport)")
+        set(OS_IMPORT "__declspec(dllimport)")
+    else()
+        set(OS_EXPORT "__attribute__((visibility(\"default\")))")
+        set(OS_IMPORT "__attribute__((visibility(\"default\")))")
+    endif()
 
     # Set target file
     set(target_dir "${LIB_INTERFACE_HEADERS_INCLUDEDIR}")

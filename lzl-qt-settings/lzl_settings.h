@@ -294,7 +294,7 @@ private:
 
     // 定义注册表
 private:
-    struct RegData
+    struct LZL_QT_SETTINGS_EXPORT RegData
     {
         QVariant default_value = {};
         std::function<bool(const QVariant&)> check = nullptr;
@@ -303,7 +303,7 @@ private:
         ~RegData();
         void clearConns() const;
     };
-    struct RegGroup
+    struct LZL_QT_SETTINGS_EXPORT RegGroup
     {
         using DataSet = QMap<QString, RegData>;
         using GroupSet = QMap<QString, RegGroup>;

@@ -1,11 +1,3 @@
-#[[
-    License: GPLv3 LGPLv3
-    Copyright (c) 2024-2025 李宗霖 (Li Zonglin)
-    Email: supine0703@outlook.com
-    GitHub: https://github.com/supine0703
-    Repository: https://github.com/supine0703/qt-settings
-]]
-
 project(lzl-qt-settings VERSION 0.3.4 LANGUAGES CXX)
 
 # 检查目标是否存在
@@ -14,17 +6,17 @@ if(TARGET ${PROJECT_NAME})
     return()
 endif()
 
+set(LIB_EXPORT_HEADER lzl_lib_settings_exports.h)
 set(INTERFACE_HEADERS
     settings
     function_traits
     lzl_settings.h
     lzl_convert_qt_variant.h
 )
-
 set(SOURCES_FILES
-    lzl_settings.cpp
-    lzl_lib_settings_exports.h
     ${INTERFACE_HEADERS}
+    ${LIB_EXPORT_HEADER}
+    lzl_settings.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC
@@ -56,7 +48,9 @@ if(INSTALL_LZL_QT_SETTINGS_LIB)
     )
 
     if(INSTALL_INTERFACE_HEADERS)
-        install(FILES ${INTERFACE_HEADERS} lzl_lib_settings_exports.h
+        install(FILES
+            ${INTERFACE_HEADERS}
+            ${LIB_EXPORT_HEADER}
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
         )
     endif()
@@ -66,17 +60,15 @@ endif()
 
 # Copy library interface headers
 copy_lib_i_headers(LIB lzl VERBOSE
-    HEADERS_FILES
-    ${INTERFACE_HEADERS}
+    HEADERS_FILES ${INTERFACE_HEADERS}
 )
 copy_lib_i_headers(LIB lzl/functional/cxx17 VERBOSE
-    HEADERS_FILES
-    functional/cxx17/function_traits.h
+    HEADERS_FILES functional/cxx17/function_traits.h
 )
 
 # Generate library exports header
 generate_lib_exports_header(LIB lzl VERBOSE
     TARGET ${PROJECT_NAME}
     EXPORT_MACRO ${LZL_LIB_MACRO}
-    FILE_NAME lzl_lib_settings_exports.h
+    FILE_NAME ${LIB_EXPORT_HEADER}
 )

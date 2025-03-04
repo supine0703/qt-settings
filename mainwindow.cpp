@@ -21,21 +21,6 @@
 // 可以通过搜索这个宏查看如果不封装和封装后的区别
 #define USE_LZL_QT_SETTINGS 1
 
-#if USE_LZL_QT_SETTINGS
-namespace lzl::utils {
-template <>
-struct ConvertQVariant<const QSize&>
-{
-    static auto convert(const QVariant& value) { return value.toSize(); }
-};
-template <>
-struct ConvertQVariant<const QPoint&>
-{
-    static auto convert(const QVariant& value) { return value.toPoint(); }
-};
-} // namespace lzl::utils
-#endif // 补充需要转换的类型
-
 static lzl::Settings::ConnId id1, id2, id3;
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
