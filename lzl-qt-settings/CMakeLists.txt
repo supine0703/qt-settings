@@ -1,4 +1,4 @@
-project(lzl-qt-settings VERSION 0.3.4 LANGUAGES CXX)
+project(lzl-qt-settings VERSION 0.3.5 LANGUAGES CXX)
 
 # 检查目标是否存在
 if(TARGET ${PROJECT_NAME})
@@ -23,7 +23,7 @@ add_library(${PROJECT_NAME} STATIC
     ${SOURCES_FILES}
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::Core
 )
 
