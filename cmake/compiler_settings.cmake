@@ -11,44 +11,42 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 99)
 
 # compiler and linker flags
-function(add_flag_if_missing flag variable)
-    string(FIND "${${variable}}" "${flag}" _pos)
+function(add_flags_if_missing variable flags)
+    foreach(flag ${flags})
+        string(FIND "${${variable}}" "${flag}" _pos)
 
-    if(${_pos} EQUAL -1)
-        set(${variable} "${flag} ${${variable}}" PARENT_SCOPE)
-    endif()
+        if(${_pos} EQUAL -1)
+            set(${variable} "${flag} ${${variable}}" PARENT_SCOPE)
+        endif()
+    endforeach()
 endfunction()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # 添加 /utf-8 编译标志
-    add_flag_if_missing("/utf-8" CMAKE_C_FLAGS)
-    add_flag_if_missing("/utf-8" CMAKE_CXX_FLAGS)
+    # add /utf-8 flag
+    add_flags_if_missing(CMAKE_C_FLAGS "/utf-8")
+    add_flags_if_missing(CMAKE_CXX_FLAGS "/utf-8")
 
     if(WARN_ALL)
-        # 添加 /W4 编译标志
-        add_flag_if_missing("/W4" CMAKE_C_FLAGS)
-        add_flag_if_missing("/W4" CMAKE_CXX_FLAGS)
+        # add /W4 flag
+        add_flags_if_missing(CMAKE_C_FLAGS "/W4")
+        add_flags_if_missing(CMAKE_CXX_FLAGS "/W4")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # 添加 -Wl,--no-undefined 和 -Wl,--as-needed 链接器标志
-    add_flag_if_missing("-Wl,--no-undefined" CMAKE_SHARED_LINKER_FLAGS)
-    add_flag_if_missing("-Wl,--as-needed" CMAKE_SHARED_LINKER_FLAGS)
-    add_flag_if_missing("-Wl,--no-undefined" CMAKE_MODULE_LINKER_FLAGS)
-    add_flag_if_missing("-Wl,--as-needed" CMAKE_MODULE_LINKER_FLAGS)
+    # add -Wl,--no-undefined and -Wl,--as-needed linker flags
+    add_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined" "-Wl,--as-needed")
+    add_flags_if_missing(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined" "-Wl,--as-needed")
 
     if(WARN_ALL)
-        # 添加 -Wall 和 -Wextra 编译标志
-        add_flag_if_missing("-Wall" CMAKE_C_FLAGS)
-        add_flag_if_missing("-Wextra" CMAKE_C_FLAGS)
-        add_flag_if_missing("-Wall" CMAKE_CXX_FLAGS)
-        add_flag_if_missing("-Wextra" CMAKE_CXX_FLAGS)
+        # add -Wall and -Wextra flags
+        add_flags_if_missing(CMAKE_C_FLAGS "-Wall" "-Wextra")
+        add_flags_if_missing(CMAKE_CXX_FLAGS "-Wall" "-Wextra")
     endif()
 endif()
 
 # visibility
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(UNIX AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # clangd check will error if here is set
     set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 endif()
