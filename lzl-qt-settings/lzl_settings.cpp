@@ -92,7 +92,7 @@ void Settings::RegData::clearConns() const
         Q_ASSERT_X(
             s_conns.contains(conn),
             Q_FUNC_INFO,
-            QStringLiteral("Connection not found id: %1").arg(conn).toUtf8().constData()
+            QStringLiteral("Connection not found id: %1").arg(static_cast<quintptr>(conn)).toUtf8().constData()
         );
         s_conns.remove(conn);
     }
@@ -277,7 +277,9 @@ void Settings::disconnectReadValue(ConnId id)
 {
     Q_ASSERT(!id.isNull());
     Q_ASSERT_X(
-        s_conns.contains(id), Q_FUNC_INFO, QStringLiteral("Connection not found id: %1").arg(id).toUtf8().constData()
+        s_conns.contains(id),
+        Q_FUNC_INFO,
+        QStringLiteral("Connection not found id: %1").arg(static_cast<quintptr>(id)).toUtf8().constData()
     );
     s_conns.take(id).disconnect();
 }
@@ -310,7 +312,9 @@ void Settings::disconnectAllSettingsReadValues()
 void Settings::emitReadValue(ConnId id)
 {
     Q_ASSERT_X(
-        s_conns.contains(id), Q_FUNC_INFO, QStringLiteral("Connection not found id: %1").arg(id).toUtf8().constData()
+        s_conns.contains(id),
+        Q_FUNC_INFO,
+        QStringLiteral("Connection not found id: %1").arg(static_cast<quintptr>(id)).toUtf8().constData()
     );
     s_conns[id].read();
 }
