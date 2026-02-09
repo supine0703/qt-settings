@@ -1,10 +1,16 @@
+# Build artifacts
 build/
 install/
 .include/
+
+# User-specific files
+.qtcreator/
 *.usr
 *.user
 *.vscode
 *.autosave
+
+# Archive files
 *.zip
 *.7z
 *.tar.*

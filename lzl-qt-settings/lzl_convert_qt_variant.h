@@ -6,8 +6,8 @@
  * Repository: https://github.com/supine0703/qt-settings
  */
 
-#ifndef __LZL_UTILS_CONVERT_QT_VARIANT_H__
-#define __LZL_UTILS_CONVERT_QT_VARIANT_H__
+#ifndef __LZL_UTILS__CONVERT_QT_VARIANT_H__
+#define __LZL_UTILS__CONVERT_QT_VARIANT_H__
 
 #include <QRect>
 #include <QVariant>
@@ -98,4 +98,4 @@ struct ConvertQVariant<const QPoint&>
 
 } // namespace lzl::utils
 
-#endif // __LZL_QT_UTILS_CONVERT_QT_VARIANT_H__
+#endif // __LZL_UTILS__CONVERT_QT_VARIANT_H__

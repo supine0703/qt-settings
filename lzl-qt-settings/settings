@@ -6,8 +6,8 @@
  * Repository: https://github.com/supine0703/qt-settings
  */
 
-#ifndef ___LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
-#define ___LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
+#ifndef __LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
+#define __LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
 
 #include "lzl_settings.h"
 
@@ -15,4 +15,4 @@ namespace lzl {
 using Settings = utils::Settings;
 } // namespace lzl
 
-#endif // ___LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__
+#endif // __LZL_QT_UTILS__LZL_QT_SETTINGS_HEADER__

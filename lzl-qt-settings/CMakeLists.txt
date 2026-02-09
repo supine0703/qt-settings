@@ -1,9 +1,18 @@
-project(lzl-qt-settings VERSION 0.3.5 LANGUAGES CXX)
+project(lzl-qt-settings VERSION 0.3.6 LANGUAGES CXX)
 
 # 检查目标是否存在
 if(TARGET ${PROJECT_NAME})
     message(STATUS "Target '${PROJECT_NAME}' already exists.")
     return()
+endif()
+
+# 检测 C++ 标准
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_STANDARD 17)
+elseif(CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "lzl-qt-settings requires at least C++17 standard.")
 endif()
 
 set(LIB_EXPORT_HEADER lzl_lib_settings_exports.h)

@@ -16,7 +16,11 @@
     #define CONFIG_INI "config.ini"
 #endif
 
-using namespace lzl::utils;
+namespace lzl::utils {
+
+namespace {
+const auto _connIdMetaTypeId = qRegisterMetaType<Settings::ConnId>("lzl::utils::Settings::ConnId");
+} // namespace
 
 // 实例构造
 /* ========================================================================== */
@@ -43,12 +47,9 @@ Settings& Settings::instance()
     return *s_instance;
 }
 
-Settings::Settings(const QString& filename, QObject* parent) : m_q_settings(filename, QSettings::IniFormat, parent)
-{
-    ::qRegisterMetaType<ConnId>("lzl::utils::Settings::ConnId");
-}
+Settings::Settings(const QString& filename, QObject* parent) : m_q_settings(filename, QSettings::IniFormat, parent) {}
 
-void Settings::InitIniDirectory(const QString& directory)
+void Settings::InitIniDirectory(const QString& directory) noexcept
 {
     Q_ASSERT_X(
         s_instance == nullptr,
@@ -168,7 +169,7 @@ void Settings::RegGroup::insertData(
     );
 
     // 插入数据
-    group->dataset.insert(name, {default_value, check_func});
+    group->dataset.insert(name, {default_value, std::move(check_func)});
 }
 
 void Settings::RegGroup::removeData(const QString& key)
@@ -402,9 +403,9 @@ QVariant Settings::getValue(const QString& key)
 
 QMap<Settings::ConnId, Settings::ConnFunctions> Settings::s_conns = {};
 
-Settings::ConnId Settings::idGenerator()
+Settings::ConnId Settings::generateId()
 {
-    static ConnId id = 0;
+    static ConnId id;
     do
     {
         ++id;
@@ -414,7 +415,7 @@ Settings::ConnId Settings::idGenerator()
 
 Settings::ConnId Settings::insertConn(const RegData* data, std::function<void(void)>&& read_func)
 {
-    auto id = idGenerator();
+    auto id = generateId();
     data->conns.append(id);
     s_conns[id] = {
         std::move(read_func),
@@ -441,3 +442,5 @@ void Settings::getConnIdsFromGroup(const RegGroup* group, QList<ConnId>& conns)
         getConnIdsFromGroup(&subGroup, conns);
     }
 }
+
+} // namespace lzl::utils

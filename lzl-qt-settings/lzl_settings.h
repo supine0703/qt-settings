@@ -6,8 +6,8 @@
  * Repository: https://github.com/supine0703/qt-settings
  */
 
-#ifndef ___LZL_QT_UTILS__LZL_QT_SETTINGS_H__
-#define ___LZL_QT_UTILS__LZL_QT_SETTINGS_H__
+#ifndef __LZL_QT_UTILS__LZL_QT_SETTINGS_H__
+#define __LZL_QT_UTILS__LZL_QT_SETTINGS_H__
 
 #include "function_traits"
 #include "lzl_convert_qt_variant.h"
@@ -42,34 +42,30 @@ public:
     /**
      * @brief ConnId 绑定读取事件的 id 类
      */
-    class ConnId final
+    class LZL_QT_SETTINGS_EXPORT ConnId final
     {
         friend class Settings;
 
     public:
-        ConnId() = default;
-        ConnId(const ConnId&) = default;
-        ConnId& operator=(const ConnId&) = default;
-        ~ConnId() = default;
-        bool isNull() const { return this->m_id == 0; }
+        ConnId() noexcept = default;
+        ConnId(const ConnId&) noexcept = default;
+        ConnId(ConnId&&) noexcept = default;
+        ConnId& operator=(const ConnId&) noexcept = default;
+        ConnId& operator=(ConnId&&) noexcept = default;
+        ~ConnId() noexcept = default;
+        [[nodiscard]] bool isNull() const noexcept { return this->m_id == 0; }
 
-        operator void*() const { return m_id; }
-        operator uintptr_t() const { return reinterpret_cast<uintptr_t>(m_id); }
-        friend bool operator==(const ConnId& lhs, const ConnId& rhs) { return lhs.m_id == rhs.m_id; }
-        friend bool operator<(const ConnId& lhs, const ConnId& rhs) { return lhs.m_id < rhs.m_id; }
+        explicit operator std::size_t() const noexcept { return m_id; }
+        friend bool operator==(const ConnId& lhs, const ConnId& rhs) noexcept { return lhs.m_id == rhs.m_id; }
+        friend bool operator<(const ConnId& lhs, const ConnId& rhs) noexcept { return lhs.m_id < rhs.m_id; }
 
     private:
-        void* m_id;
+        std::size_t m_id = 0;
 
-        ConnId(void* id) : m_id(id) {}
-        ConnId& operator=(void* id)
+        ConnId(std::size_t id) : m_id(id) {}
+        ConnId& operator++() noexcept
         {
-            m_id = id;
-            return *this;
-        }
-        ConnId& operator++()
-        {
-            m_id = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(m_id) + 1);
+            m_id = m_id + 1;
             return *this;
         }
     };
@@ -79,7 +75,7 @@ public:
      * @param directory 目录路径
      * @note 必须在第一次调用功能之前设置
      */
-    static void InitIniDirectory(const QString& directory);
+    static void InitIniDirectory(const QString& directory) noexcept;
 
     /**
      * @brief setIniFilename 设置设置文件的文件名
@@ -109,14 +105,14 @@ public:
      * @param key 键的值
      * @return 是否注册过
      */
-    static bool containsKey(const QString& key) { return instance().m_regedit.containsData(key); }
+    [[nodiscard]] static bool containsKey(const QString& key) { return instance().m_regedit.containsData(key); }
 
     /**
      * @brief containsGroup 是否存在组
      * @param dir 组的路径
      * @return 是否存在组
      */
-    static bool containsGroup(const QString& dir) { return instance().m_regedit.containsGroup(dir); }
+    [[nodiscard]] static bool containsGroup(const QString& dir) { return instance().m_regedit.containsGroup(dir); }
 
     /**
      * @brief registerSetting 注册设置
@@ -126,11 +122,11 @@ public:
      */
     static void registerSetting(
         const QString& key,
-        const QVariant& default_value = QVariant(),
+        const QVariant& default_value = {},
         std::function<bool(const QVariant&)> check_func = [](const QVariant&) { return true; }
     )
     {
-        instance().m_regedit.insertData(key, default_value, check_func);
+        instance().m_regedit.insertData(key, default_value, std::move(check_func));
     }
 
     /**
@@ -186,7 +182,7 @@ public:
      * @param read_func 对象成员函数读取设置的回调函数
      */
     template <typename Func>
-    static void readValue(const QString& key, trains_class_type<Func>* object, Func read_func);
+    static void readValue(const QString& key, lzl::trains_class_type<Func>* object, Func read_func);
 
     /**
      * @brief connectReadValue 绑定读取事件
@@ -206,7 +202,7 @@ public:
      * @return 读取事件的 id
      */
     template <typename Func, typename = std::enable_if_t<std::is_member_function_pointer<Func>::value>>
-    static ConnId connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func);
+    static ConnId connectReadValue(const QString& key, lzl::trains_class_type<Func>* object, Func read_func);
 
     /**
      * @brief disconnectReadValue 解绑读取事件
@@ -264,25 +260,25 @@ public:
      * @brief getConnIds 获取所有的读取事件 id 列表
      * @return id 列表, Q_ASSERT(!id.isNull());
      */
-    static QList<ConnId> getConnIds() { return s_conns.keys(); }
+    [[nodiscard]] static QList<ConnId> getConnIds() { return s_conns.keys(); }
 
     /**
      * @brief getConnIdsFromKey 获取键的读取事件 id 列表
      * @param key 注册过的键，不可为空
      * @return id 列表, Q_ASSERT(!id.isNull());
      */
-    static QList<ConnId> getConnIdsFromKey(const QString& key);
+    [[nodiscard]] static QList<ConnId> getConnIdsFromKey(const QString& key);
 
     /**
      * @brief getConnIdsFromGroup 获取组的读取事件 id 列表
      * @param dir 存在的组，不可为空
      * @return id 列表, Q_ASSERT(!id.isNull());
      */
-    static QList<ConnId> getConnIdsFromGroup(const QString& dir);
+    [[nodiscard]] static QList<ConnId> getConnIdsFromGroup(const QString& dir);
 
     // 构造析构
 private:
-    static Settings& instance();
+    [[nodiscard]] static Settings& instance();
     explicit Settings(const QString& filename, QObject* parent = nullptr);
     ~Settings() = default;
 
@@ -311,7 +307,7 @@ private:
         GroupSet groupset;
 
         // 基本函数
-        bool isEmpty() const { return dataset.isEmpty() && groupset.isEmpty(); }
+        [[nodiscard]] bool isEmpty() const { return dataset.isEmpty() && groupset.isEmpty(); }
         void clear()
         {
             dataset.clear();
@@ -322,12 +318,12 @@ private:
         using dataset_iterator = DataSet::iterator;
         using groupset_iterator = GroupSet::iterator;
 
-        dataset_iterator dataEnd() { return dataset.end(); }
-        groupset_iterator groupEnd() { return groupset.end(); }
+        [[nodiscard]] dataset_iterator dataEnd() { return dataset.end(); }
+        [[nodiscard]] groupset_iterator groupEnd() { return groupset.end(); }
 
-        bool containsData(const QString& key) { return findData(key) != dataEnd(); }
-        bool containsGroup(const QString& dir) { return findGroup(dir) != groupEnd(); }
-        bool containsGroup(const QStringList& dir) { return findGroup(dir) != groupEnd(); }
+        [[nodiscard]] bool containsData(const QString& key) { return findData(key) != dataEnd(); }
+        [[nodiscard]] bool containsGroup(const QString& dir) { return findGroup(dir) != groupEnd(); }
+        [[nodiscard]] bool containsGroup(const QStringList& dir) { return findGroup(dir) != groupEnd(); }
 
         dataset_iterator findData(const QString& key);
         groupset_iterator findGroup(const QString& dir);
@@ -348,9 +344,9 @@ private:
 
     // 一些非静态的辅助函数
 private:
-    RegGroup::dataset_iterator findRecord(const QString& key);
-    RegGroup::groupset_iterator findRegGroup(const QString& dir);
-    QVariant getValue(const QString& key);
+    [[nodiscard]] RegGroup::dataset_iterator findRecord(const QString& key);
+    [[nodiscard]] RegGroup::groupset_iterator findRegGroup(const QString& dir);
+    [[nodiscard]] QVariant getValue(const QString& key);
 
     // 静态数据
 private:
@@ -363,8 +359,8 @@ private:
 
     // 静态的辅助函数
 private:
-    static ConnId idGenerator();
-    static ConnId insertConn(const RegData* data, std::function<void(void)>&& read_func);
+    [[nodiscard]] static ConnId generateId();
+    [[nodiscard]] static ConnId insertConn(const RegData* data, std::function<void(void)>&& read_func);
 
     // 用作递归
     static void getConnIdsFromGroup(const RegGroup* group, QList<ConnId>& conns);
@@ -386,35 +382,39 @@ inline void Settings::registerSetting(
 template <typename Func>
 inline void Settings::readValue(const QString& key, Func read_func)
 {
-    using arg_type = typename function_traits<Func>::template arg<0>::type;
-    Q_STATIC_ASSERT(function_traits<Func>::arity == 1);
+    using arg_type = typename lzl::function_traits<Func>::template arg<0>::type;
+    Q_STATIC_ASSERT(lzl::function_traits<Func>::arity == 1);
     read_func(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
 }
 
 template <typename Func>
-inline void Settings::readValue(const QString& key, trains_class_type<Func>* object, Func read_func)
+inline void Settings::readValue(const QString& key, lzl::trains_class_type<Func>* object, Func read_func)
 {
-    using arg_type = typename function_traits<Func>::template arg<0>::type;
-    Q_STATIC_ASSERT(function_traits<Func>::arity == 1);
+    using arg_type = typename lzl::function_traits<Func>::template arg<0>::type;
+    Q_STATIC_ASSERT(lzl::function_traits<Func>::arity == 1);
     (object->*read_func)(ConvertQVariant<arg_type>::convert(instance().getValue(key)));
 }
 
 template <typename Func, typename>
 inline Settings::ConnId Settings::connectReadValue(const QString& key, Func read_func)
 {
-    return insertConn(&(instance().findRecord(key).value()), [key, read_func]() {
+    return insertConn(&(instance().findRecord(key).value()), [key, read_func = std::move(read_func)]() {
         instance().readValue(key, read_func);
     });
 }
 
 template <typename Func, typename>
-inline Settings::ConnId Settings::connectReadValue(const QString& key, trains_class_type<Func>* object, Func read_func)
+inline Settings::ConnId Settings::connectReadValue(
+    const QString& key, lzl::trains_class_type<Func>* object, Func read_func
+)
 {
-    return insertConn(&(instance().findRecord(key).value()), [key, object, read_func]() {
+    return insertConn(&(instance().findRecord(key).value()), [key, object, read_func = std::move(read_func)]() {
         instance().readValue(key, object, read_func);
     });
 }
 
 } // namespace lzl::utils
 
-#endif // ___LZL_QT_UTILS__LZL_QT_SETTINGS_H__
+Q_DECLARE_METATYPE(lzl::utils::Settings::ConnId)
+
+#endif // __LZL_QT_UTILS__LZL_QT_SETTINGS_H__
