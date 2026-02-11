@@ -28,7 +28,6 @@ namespace lzl::utils {
  *   - @param path 键或组的路径，如：app/font/size、app/font
  *   - @param word 路径的一部分，如：app、font、size
  *   - @param name 路径的最后一部分，如：size、font
- * @example
  */
 class LZL_QT_SETTINGS_EXPORT Settings final
 {
@@ -36,6 +35,8 @@ class LZL_QT_SETTINGS_EXPORT Settings final
     Settings& operator=(const Settings&) = delete;
     Settings(Settings&&) = delete;
     Settings& operator=(Settings&&) = delete;
+
+    using CheckFunction = std::function<bool(const QVariant&)>;
 
     // 对外的接口
 public:
@@ -47,27 +48,21 @@ public:
         friend class Settings;
 
     public:
-        ConnId() noexcept = default;
-        ConnId(const ConnId&) noexcept = default;
-        ConnId(ConnId&&) noexcept = default;
-        ConnId& operator=(const ConnId&) noexcept = default;
-        ConnId& operator=(ConnId&&) noexcept = default;
-        ~ConnId() noexcept = default;
-        [[nodiscard]] bool isNull() const noexcept { return this->m_id == 0; }
+        ConnId() = default;
+        ~ConnId() = default;
 
+        [[nodiscard]] bool isNull() const noexcept { return this->m_id == 0; }
         explicit operator std::size_t() const noexcept { return m_id; }
+
         friend bool operator==(const ConnId& lhs, const ConnId& rhs) noexcept { return lhs.m_id == rhs.m_id; }
         friend bool operator<(const ConnId& lhs, const ConnId& rhs) noexcept { return lhs.m_id < rhs.m_id; }
+        friend auto qHash(const ConnId& key, size_t seed = 0) noexcept { return ::qHash(key.m_id, seed); }
 
     private:
         std::size_t m_id = 0;
 
-        ConnId(std::size_t id) : m_id(id) {}
-        ConnId& operator++() noexcept
-        {
-            m_id = m_id + 1;
-            return *this;
-        }
+        ConnId(std::size_t id) noexcept : m_id(id) {}
+        ConnId& operator++() noexcept { return ++m_id, *this; }
     };
 
     /**
@@ -79,10 +74,10 @@ public:
 
     /**
      * @brief setIniFilename 设置设置文件的文件名
-     * @param filePath 文件完整路径
+     * @param file_path 文件完整路径
      * @note 必须在第一次调用功能之前设置
      */
-    static void InitIniFilePath(const QString& filePath);
+    static void InitIniFilePath(const QString& file_path);
 
     /**
      * @brief sync 同步设置
@@ -121,9 +116,9 @@ public:
      * @param check_func 检查默认值是否合法
      */
     static void registerSetting(
-        const QString& key,
-        const QVariant& default_value = {},
-        std::function<bool(const QVariant&)> check_func = [](const QVariant&) { return true; }
+        const QString& key, const QVariant& default_value = {}, CheckFunction check_func = [](const QVariant&) -> bool {
+            return true;
+        }
     )
     {
         instance().m_regedit.insertData(key, default_value, std::move(check_func));
@@ -286,20 +281,20 @@ private:
 private:
     static Settings* s_instance;
     static QString s_ini_directory;
-    static QString s_ini_fileName;
+    static QString s_ini_file_name;
 
     // 定义注册表
 private:
-    struct LZL_QT_SETTINGS_EXPORT RegData
+    struct LZL_QT_SETTINGS_EXPORT RegData final
     {
         QVariant default_value = {};
-        std::function<bool(const QVariant&)> check = nullptr;
-        mutable QList<ConnId> conns = {};
+        CheckFunction check_func = {};
+        mutable QList<ConnId> conn_ids = {};
 
         ~RegData();
         void clearConns() const;
     };
-    struct LZL_QT_SETTINGS_EXPORT RegGroup
+    struct LZL_QT_SETTINGS_EXPORT RegGroup final
     {
         using DataSet = QMap<QString, RegData>;
         using GroupSet = QMap<QString, RegGroup>;
@@ -308,35 +303,41 @@ private:
 
         // 基本函数
         [[nodiscard]] bool isEmpty() const { return dataset.isEmpty() && groupset.isEmpty(); }
-        void clear()
-        {
-            dataset.clear();
-            groupset.clear();
-        }
+        void clear() { dataset.clear(), groupset.clear(); }
 
-        // 通过迭代器 增删改查
+        // 通过迭代器 增删改查 <- 现在改为通过指针操作
         using dataset_iterator = DataSet::iterator;
         using groupset_iterator = GroupSet::iterator;
 
-        [[nodiscard]] dataset_iterator dataEnd() { return dataset.end(); }
-        [[nodiscard]] groupset_iterator groupEnd() { return groupset.end(); }
+        [[nodiscard]] bool containsData(const QString& key) { return findData(key) != nullptr; }
+        [[nodiscard]] bool containsGroup(const QString& dir) { return findGroup(dir) != nullptr; }
+        [[nodiscard]] bool containsGroup(const QStringList& words) { return findGroup(words) != nullptr; }
+        [[nodiscard]] RegData* findData(const QString& key);
+        [[nodiscard]] RegGroup* findGroup(const QString& dir);
+        [[nodiscard]] RegGroup* findGroup(const QStringList& words);
 
-        [[nodiscard]] bool containsData(const QString& key) { return findData(key) != dataEnd(); }
-        [[nodiscard]] bool containsGroup(const QString& dir) { return findGroup(dir) != groupEnd(); }
-        [[nodiscard]] bool containsGroup(const QStringList& dir) { return findGroup(dir) != groupEnd(); }
-
-        dataset_iterator findData(const QString& key);
-        groupset_iterator findGroup(const QString& dir);
-        groupset_iterator findGroup(const QStringList& dir);
-
-        void insertData(
-            const QString& key, const QVariant& default_value, std::function<bool(const QVariant&)> check_func
-        );
+        void insertData(const QString& key, const QVariant& default_value, CheckFunction check_func);
         void removeData(const QString& key);
         void removeGroup(const QString& dir);
 
-        static QStringList detachPath(const QString& path);
-        static QPair<QStringList, QString> parsePath(const QString& path);
+        struct ParsedPathPair final
+        {
+            QStringList words;
+            QString name;
+        };
+
+        /**
+         * @brief detachPath 分离路径为各个部分
+         * @param path 路径
+         * @return words 各个部分组成的列表
+         */
+        [[nodiscard]] static QStringList detachPath(const QString& path);
+        /**
+         * @brief parsePath 解析路径为目录和名称
+         * @param path 路径
+         * @return {words, name} 目录各个部分组成的列表和名称
+         */
+        [[nodiscard]] static ParsedPathPair parsePath(const QString& path);
     };
 
     RegGroup m_regedit;
@@ -344,13 +345,13 @@ private:
 
     // 一些非静态的辅助函数
 private:
-    [[nodiscard]] RegGroup::dataset_iterator findRecord(const QString& key);
-    [[nodiscard]] RegGroup::groupset_iterator findRegGroup(const QString& dir);
+    [[nodiscard]] RegData* findRecord(const QString& key);
+    [[nodiscard]] RegGroup* findRegGroup(const QString& dir);
     [[nodiscard]] QVariant getValue(const QString& key);
 
     // 静态数据
 private:
-    struct ConnFunctions
+    struct ConnFunctions final
     {
         std::function<void(void)> read;
         std::function<void(void)> disconnect;
@@ -363,7 +364,7 @@ private:
     [[nodiscard]] static ConnId insertConn(const RegData* data, std::function<void(void)>&& read_func);
 
     // 用作递归
-    static void getConnIdsFromGroup(const RegGroup* group, QList<ConnId>& conns);
+    static void getConnIdsFromGroup(const RegGroup* group, QList<ConnId>& conn_ids);
 };
 
 // 下面是模板函数的实现
@@ -398,7 +399,7 @@ inline void Settings::readValue(const QString& key, lzl::trains_class_type<Func>
 template <typename Func, typename>
 inline Settings::ConnId Settings::connectReadValue(const QString& key, Func read_func)
 {
-    return insertConn(&(instance().findRecord(key).value()), [key, read_func = std::move(read_func)]() {
+    return insertConn(instance().findRecord(key), [key, read_func = std::move(read_func)]() {
         instance().readValue(key, read_func);
     });
 }
@@ -408,7 +409,7 @@ inline Settings::ConnId Settings::connectReadValue(
     const QString& key, lzl::trains_class_type<Func>* object, Func read_func
 )
 {
-    return insertConn(&(instance().findRecord(key).value()), [key, object, read_func = std::move(read_func)]() {
+    return insertConn(instance().findRecord(key), [key, object, read_func = std::move(read_func)]() {
         instance().readValue(key, object, read_func);
     });
 }
