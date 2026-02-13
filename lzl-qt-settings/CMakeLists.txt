@@ -1,4 +1,4 @@
-project(lzl-qt-settings VERSION 0.3.6 LANGUAGES CXX) # temp version
+project(lzl-qt-settings VERSION 0.3.6 LANGUAGES CXX)
 
 # 检查目标是否存在
 if(TARGET ${PROJECT_NAME})
