@@ -8,8 +8,8 @@
 **
 *******************************************************************************/
 
-#ifndef __LZL_UTILS_FUNCTION_TRAITS_H__
-#define __LZL_UTILS_FUNCTION_TRAITS_H__
+#ifndef __LZL_UTILS__FUNCTION_TRAITS_H__
+#define __LZL_UTILS__FUNCTION_TRAITS_H__
 
 #include <cstddef>
 #include <functional>
@@ -90,4 +90,4 @@ using trains_class_type = typename function_traits<Func>::class_type;
 
 } // namespace lzl::utils
 
-#endif //__LZL_UTILS_FUNCTION_TRAITS_H__
+#endif //__LZL_UTILS__FUNCTION_TRAITS_H__

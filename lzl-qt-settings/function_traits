@@ -6,8 +6,8 @@
  * Repository: https://github.com/supine0703/qt-settings
  */
 
-#ifndef __LZL_QT_UTILS__LZL_FUNCTION_TRAITS_HEADER__
-#define __LZL_QT_UTILS__LZL_FUNCTION_TRAITS_HEADER__
+#ifndef __LZL_UTILS__LZL_FUNCTION_TRAITS_HEADER__
+#define __LZL_UTILS__LZL_FUNCTION_TRAITS_HEADER__
 
 #include "functional/cxx17/function_traits.h"
 
@@ -18,4 +18,4 @@ template <typename Func>
 using trains_class_type = utils::trains_class_type<Func>;
 } // namespace lzl
 
-#endif // __LZL_QT_UTILS__LZL_FUNCTION_TRAITS_HEADER__
+#endif // __LZL_UTILS__LZL_FUNCTION_TRAITS_HEADER__
